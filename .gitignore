@@ -1,4 +1,6 @@
-# Miscellaneous
+# ============================================================
+# Misc
+# ============================================================
 *.class
 *.log
 *.pyc
@@ -12,42 +14,70 @@
 .swiftpm/
 migrate_working_dir/
 
-# IntelliJ related
+# ============================================================
+# IntelliJ / Android Studio
+# ============================================================
 *.iml
 *.ipr
 *.iws
 .idea/
 
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
+# ============================================================
+# VS Code
+# ============================================================
+.vscode/
 
-# Flutter/Dart/Pub related
+# ============================================================
+# Flutter / Dart / Pub
+# ============================================================
 **/doc/api/
 **/ios/Flutter/.last_build_id
 .dart_tool/
+.flutter-plugins
 .flutter-plugins-dependencies
 .pub-cache/
 .pub/
 /build/
 /coverage/
 
-# Symbolication related
+# ============================================================
+# Symbolication / Obfuscation
+# ============================================================
 app.*.symbols
-
-# Obfuscation related
 app.*.map.json
 
-# Android Studio will place build artifacts here
+# ============================================================
+# Android build artifacts
+# ============================================================
 /android/app/debug
 /android/app/profile
 /android/app/release
+android/build/
+android/app/build/
+android/.gradle/
+android/local.properties
+android/captures/
 
-# Widget Preview related
+# ============================================================
+# iOS / macOS build artifacts
+# ============================================================
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/Flutter/Generated.xcconfig
+ios/Flutter/flutter_export_environment.sh
+macos/Pods/
+macos/Flutter/ephemeral/
+
+# ============================================================
+# Widget Preview
+# ============================================================
 .widget_preview/
 
-# === Security / Secrets (مهم برای ریپوی Public) ===
+# ============================================================
+# Security / Secrets  (مهم برای ریپوی Public)
+# ============================================================
 android/key.properties
 *.jks
 *.keystore
@@ -55,13 +85,19 @@ android/key.properties
 .env.*
 !.env.example
 
-# === macOS ===
-.DS_Store
+# ============================================================
+# Claude Code (تنظیمات محلی، نباید push شود)
+# ============================================================
+.claude/
 
-# === Windows ===
+# ============================================================
+# OS junk files
+# ============================================================
+.DS_Store
 Thumbs.db
 desktop.ini
 
-# === IDE (اختیاری، اما بهتر است) ===
-.idea/
-.vscode/
+# ============================================================
+# Web version file (به‌صورت خودکار توسط CI ساخته می‌شود)
+# ============================================================
+web/version.json
