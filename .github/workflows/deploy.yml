@@ -36,10 +36,10 @@ jobs:
       - name: Flutter Pub Get
         run: flutter pub get
 
-      - name: Generate version.json (anti-cache)
+      - name: Generate app-version.json (anti-cache)
         run: |
-          echo "{\"version\":\"$(date +%s)\",\"build\":\"${{ github.run_number }}\",\"sha\":\"${{ github.sha }}\"}" > web/version.json
-          cat web/version.json
+          echo "{\"version\":\"$(date +%s)\",\"build\":\"${{ github.run_number }}\",\"sha\":\"${{ github.sha }}\"}" > web/app-version.json
+          cat web/app-version.json
 
       - name: Build Web (Release)
         run: flutter build web --release --base-href /marpech/
