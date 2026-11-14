@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'level_reward.dart';
 
 /// مدل یک آیتم Cosmetic مخصوص سطح — فقط با رسیدن به سطح باز می‌شود

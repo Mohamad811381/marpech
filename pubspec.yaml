@@ -12,6 +12,7 @@ dependencies:
   shared_preferences: 
   audioplayers: 
   http: ^1.6.0
+  material_ui: ^1.11.0
 
 dev_dependencies:
   flutter_test:
