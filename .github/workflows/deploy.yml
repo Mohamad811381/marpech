@@ -3,7 +3,7 @@ name: Build & Deploy to GitHub Pages
 on:
   push:
     branches: [ main ]
-  workflow_dispatch:        # اجرای دستی از تب Actions
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6.0.2  # ✅ به‌روزرسانی شد
 
       - name: Setup Flutter (Stable)
         uses: subosito/flutter-action@v2
@@ -39,7 +39,7 @@ jobs:
         run: flutter build web --release --base-href /marpech/
 
       - name: Upload Pages Artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5.0.0  # ✅ به‌روزرسانی شد
         with:
           path: build/web
 
@@ -52,4 +52,4 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v4.0.5  # ✅ به‌روزرسانی شد
