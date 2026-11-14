@@ -1,0 +1,60 @@
+name: Flutter Release (APK + Web ZIP)
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Flutter (Stable)
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Flutter Pub Get
+        run: flutter pub get
+
+      - name: Generate version.json (anti-cache)
+        run: |
+          echo "{\"version\":\"$(date +%s)\",\"tag\":\"${GITHUB_REF_NAME}\",\"sha\":\"${{ github.sha }}\"}" > web/version.json
+          cat web/version.json
+
+      - name: Build APK (Release)
+        run: flutter build apk --release
+
+      - name: Build Web (Release)
+        run: flutter build web --release --base-href /marpech/
+
+      - name: Zip Web Build
+        run: |
+          cd build/web
+          zip -r ../web-release.zip .
+          cd ../..
+          ls -lh build/web-release.zip
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            build/app/outputs/flutter-apk/app-release.apk
+            build/web-release.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
