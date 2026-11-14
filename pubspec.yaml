@@ -1,0 +1,34 @@
+name: marpech
+description: بازی مار با طراحی نئونی — برای اندروید و وب
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  shared_preferences: 
+  audioplayers: 
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+  flutter_launcher_icons: ^0.13.1
+
+flutter_launcher_icons:
+  android: true
+  ios: false
+  web:
+    generate: true
+    image_path: "assets/icon.png"
+    background_color: "#0B0F14"
+    theme_color: "#4CE0B3"
+  image_path: "assets/icon.png"
+
+flutter:
+  uses-material-design: true
+  assets:                       # ← اضافه شد
+    - assets/audio/
