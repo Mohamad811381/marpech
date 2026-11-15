@@ -2,6 +2,7 @@
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import '../models/game_palette.dart';
 import '../screens/about_screen.dart';
 import '../screens/privacy_policy_screen.dart';
@@ -211,9 +212,13 @@ class AppDrawer extends StatelessWidget {
         children: [
           Icon(Icons.favorite_rounded, color: p.food, size: 14),
           const SizedBox(width: 6),
-          Text(
-            L10n.t('app_version'),
-            style: TextStyle(fontSize: 11, color: p.textMuted),
+          _VersionText(
+            style: TextStyle(
+              fontSize: 12,
+              color: p.textPrimary,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.5,
+            ),
           ),
         ],
       ),
@@ -369,6 +374,65 @@ class AppDrawer extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _VersionText extends StatefulWidget {
+  final TextStyle? style;
+  const _VersionText({this.style});
+
+  @override
+  State<_VersionText> createState() => _VersionTextState();
+}
+
+class _VersionTextState extends State<_VersionText> {
+  String _version = 'v1.0.0';
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    // ۱) تلاش با PackageInfo
+    try {
+      final info = await PackageInfo.fromPlatform();
+      if (!mounted) return;
+      final v = info.version;
+      final b = info.buildNumber;
+      if (v.isNotEmpty) {
+        setState(() {
+          _version = b.isNotEmpty ? 'v$v+$b' : 'v$v';
+        });
+        return;
+      }
+    } catch (_) {
+      // بی‌صدا رد شو، به fallback برو
+    }
+
+    // ۲) fallback: از UpdateService (که از app-version.json خوانده)
+    if (!mounted) return;
+    final sv = UpdateService.instance.semanticVersion;
+    if (sv != null && sv.isNotEmpty) {
+      setState(() => _version = 'v$sv');
+      return;
+    }
+
+    // ۳) fallback نهایی: اگر UpdateService هنوز لود نشده، از currentVersion
+    final cv = UpdateService.instance.currentVersion;
+    if (cv != null && cv.isNotEmpty) {
+      setState(() => _version = cv);
+    }
+    // اگر هیچ‌کدام نبود، همان v1.0.0 می‌ماند
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      _version,
+      style: widget.style,
     );
   }
 }

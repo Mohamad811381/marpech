@@ -18,6 +18,16 @@ class UpdateService {
   bool get hasUpdate => _updateAvailable;
   bool _updateAvailable = false;
 
+  /// نسخه‌ی معنایی remote (مثلاً "1.0.1") — از فیلد semantic می‌آید
+  String? get remoteSemanticVersion => _remoteSemanticVersion;
+  String? _remoteSemanticVersion;
+
+  /// آخرین نسخه‌ی معنایی که از سرور خوانده شد (برای نمایش در UI)
+  String? get semanticVersion => _remoteSemanticVersion;
+
+  /// نسخه‌ی فعلی که اپ با آن لود شده (fallback)
+  String? get currentVersion => _currentVersion;
+
   Timer? _timer;
 
   void start({Duration interval = const Duration(minutes: 2)}) {
@@ -60,6 +70,10 @@ class UpdateService {
       }
 
       final data = jsonDecode(response.body) as Map<String, dynamic>;
+      final remoteSemantic = data['semantic']?.toString();
+      if (remoteSemantic != null && remoteSemantic.isNotEmpty) {
+        _remoteSemanticVersion = remoteSemantic;
+      }
       final remoteVersion = data['version']?.toString();
       if (remoteVersion == null || remoteVersion.isEmpty) {
         return UpdateCheckResult.error;
