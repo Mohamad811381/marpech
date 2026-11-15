@@ -16,9 +16,32 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Auto Tag
-        uses: jacopocarlini/action-autotag@stable
-        with:
-          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
-          tag_prefix: "v"
-          overwrite: false   # 👈 این خط کلیدی است
+      - name: Read version from pubspec.yaml
+        id: read_version
+        run: |
+          VERSION=$(grep '^version: ' pubspec.yaml | sed 's/version: //' | cut -d'+' -f1)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "نسخه استخراج شده: $VERSION"
+
+      - name: Check if tag exists
+        id: check_tag
+        run: |
+          if git rev-parse "v${{ steps.read_version.outputs.version }}" >/dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "تگ v${{ steps.read_version.outputs.version }} از قبل وجود دارد"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "تگ v${{ steps.read_version.outputs.version }} وجود ندارد"
+          fi
+
+      - name: Create and push tag
+        if: steps.check_tag.outputs.exists == 'false'
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git tag -a "v${{ steps.read_version.outputs.version }}" -m "Release v${{ steps.read_version.outputs.version }}"
+          git push origin "v${{ steps.read_version.outputs.version }}"
+
+      - name: Skip message
+        if: steps.check_tag.outputs.exists == 'true'
+        run: echo "تگ از قبل وجود دارد — نیازی به ساخت مجدد نیست ✅"
