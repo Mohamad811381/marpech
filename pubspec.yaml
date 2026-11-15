@@ -13,6 +13,7 @@ dependencies:
   audioplayers: 
   http: ^1.6.0
   material_ui: ^1.11.0
+  package_info_plus: ^10.2.2
 
 dev_dependencies:
   flutter_test:
