@@ -40,8 +40,8 @@ jobs:
           mkdir -p Payload
           mv Runner.app Payload/
           zip -r ../../ios-unsigned.ipa Payload/
-          cd ../..
-          ls -lh build/ios-unsigned.ipa
+          # از همین‌جا (build/ios/iphoneos) مسیر relative را چک می‌کنیم
+          ls -lh ../../ios-unsigned.ipa
 
       - name: Upload Unsigned IPA
         uses: actions/upload-artifact@v7.0.1
