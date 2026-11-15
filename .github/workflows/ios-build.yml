@@ -1,0 +1,51 @@
+name: Build iOS (unsigned IPA)
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-ios:
+    name: Build iOS App (unsigned IPA)
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v6.0.2
+
+      - name: Set up Java 17 (برای برخی پلاگین‌ها)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Set up Flutter (Stable)
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Flutter Pub Get
+        run: flutter pub get
+
+      - name: Build iOS (بدون امضا)
+        run: flutter build ios --release --no-codesign
+
+      - name: Package as unsigned IPA
+        run: |
+          cd build/ios/iphoneos
+          mkdir -p Payload
+          mv Runner.app Payload/
+          zip -r ../../ios-unsigned.ipa Payload/
+          cd ../..
+          ls -lh build/ios-unsigned.ipa
+
+      - name: Upload Unsigned IPA
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: ios-unsigned-ipa
+          path: build/ios-unsigned.ipa
+          retention-days: 30
