@@ -1,4 +1,4 @@
-name: Build & Deploy to GitHub Pages
+name: Build Web & Deploy to Pages
 
 on:
   push:
@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v6.0.2  # ✅ به‌روزرسانی شد
+        uses: actions/checkout@v6.0.2
 
       - name: Setup Flutter (Stable)
         uses: subosito/flutter-action@v2
@@ -39,7 +39,7 @@ jobs:
         run: flutter build web --release --base-href /marpech/
 
       - name: Upload Pages Artifact
-        uses: actions/upload-pages-artifact@v5.0.0  # ✅ به‌روزرسانی شد
+        uses: actions/upload-pages-artifact@v5.0.0
         with:
           path: build/web
 
@@ -52,4 +52,4 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4.0.5  # ✅ به‌روزرسانی شد
+        uses: actions/deploy-pages@v4.0.5

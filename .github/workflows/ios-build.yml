@@ -1,10 +1,6 @@
-name: Build iOS (unsigned IPA)
+name: Build iOS (Manual, Unsigned IPA)
 
 on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
   workflow_dispatch:
 
 jobs:
@@ -16,7 +12,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v6.0.2
 
-      - name: Set up Java 17 (برای برخی پلاگین‌ها)
+      - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
@@ -40,7 +36,6 @@ jobs:
           mkdir -p Payload
           mv Runner.app Payload/
           zip -r ../../ios-unsigned.ipa Payload/
-          # از همین‌جا (build/ios/iphoneos) مسیر relative را چک می‌کنیم
           ls -lh ../../ios-unsigned.ipa
 
       - name: Upload Unsigned IPA
