@@ -19,5 +19,6 @@ jobs:
       - name: Auto Tag
         uses: jacopocarlini/action-autotag@stable
         with:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
           tag_prefix: "v"
+          overwrite: false   # 👈 این خط کلیدی است
