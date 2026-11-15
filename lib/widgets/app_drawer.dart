@@ -1,10 +1,13 @@
 // ignore_for_file: deprecated_member_use
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../models/game_palette.dart';
 import '../screens/about_screen.dart';
 import '../screens/privacy_policy_screen.dart';
 import '../services/localization_service.dart';
+import '../services/update_service.dart';
+import '../utils/web_reload.dart';
 
 class AppDrawer extends StatelessWidget {
   final GamePalette palette;
@@ -48,6 +51,12 @@ class AppDrawer extends StatelessWidget {
                 Navigator.of(context).pop();
                 onOpenSettings();
               },
+            ),
+            _item(
+              context,
+              icon: Icons.system_update_alt_rounded,
+              title: 'بررسی به‌روزرسانی',
+              onTap: () => _checkForUpdate(context),
             ),
             _item(
               context,
@@ -207,6 +216,199 @@ class AppDrawer extends StatelessWidget {
             style: TextStyle(fontSize: 11, color: p.textMuted),
           ),
         ],
+      ),
+    );
+  }
+
+  // ─────────────── بررسی به‌روزرسانی ───────────────
+
+  Future<void> _checkForUpdate(BuildContext context) async {
+    final navigator = Navigator.of(context, rootNavigator: true);
+
+    // بستن دراور
+    navigator.pop();
+
+    // کمی صبر تا انیمیشن بسته شدن تمام شود
+    await Future<void>.delayed(const Duration(milliseconds: 250));
+
+    final navCtx = navigator.context;
+    if (!navCtx.mounted) return;
+
+    // نمایش loading
+    showDialog(
+      context: navCtx,
+      barrierDismissible: false,
+      builder: (_) => _LoadingDialog(palette: p),
+    );
+
+    final result = await UpdateService.instance.checkNow();
+
+    if (!navCtx.mounted) return;
+    Navigator.of(navCtx).pop(); // بستن loading
+
+    if (!navCtx.mounted) return;
+
+    switch (result) {
+      case UpdateCheckResult.hasUpdate:
+        _showUpdateDialog(navCtx);
+        break;
+      case UpdateCheckResult.upToDate:
+        ScaffoldMessenger.of(navCtx).showSnackBar(
+          _buildSnack(
+            'نسخه شما به‌روز است ✅',
+            p.accent,
+            Icons.check_circle_rounded,
+          ),
+        );
+        break;
+      case UpdateCheckResult.error:
+        ScaffoldMessenger.of(navCtx).showSnackBar(
+          _buildSnack(
+            'اتصال برقرار نشد. اینترنت را بررسی کنید.',
+            p.food,
+            Icons.wifi_off_rounded,
+          ),
+        );
+        break;
+    }
+  }
+
+  void _showUpdateDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        backgroundColor: p.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(color: p.border, width: 1),
+        ),
+        title: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: p.accent.withOpacity(0.15),
+              ),
+              child:
+                  Icon(Icons.rocket_launch_rounded, color: p.accent, size: 22),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'نسخه جدید آماده است',
+                style: TextStyle(
+                  color: p.textPrimary,
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          kIsWeb
+              ? 'آخرین نسخه با امکانات و بهبودهای جدید در دسترس است. برای دریافت، به‌روزرسانی کنید.'
+              : 'برای به‌روزرسانی، به فروشگاه اپلیکیشن مراجعه کنید.',
+          style: TextStyle(color: p.textMuted, height: 1.6, fontSize: 13),
+        ),
+        actions: [
+          if (kIsWeb) ...[
+            TextButton(
+              onPressed: () => Navigator.of(dialogCtx).pop(),
+              child: Text('بعداً', style: TextStyle(color: p.textMuted)),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.of(dialogCtx).pop();
+                await reloadWebApp();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: p.accent,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              ),
+              child: const Text(
+                'به‌روزرسانی',
+                style: TextStyle(fontWeight: FontWeight.w800),
+              ),
+            ),
+          ] else
+            TextButton(
+              onPressed: () => Navigator.of(dialogCtx).pop(),
+              child: Text('باشه', style: TextStyle(color: p.accent)),
+            ),
+        ],
+      ),
+    );
+  }
+
+  SnackBar _buildSnack(String msg, Color color, IconData icon) {
+    return SnackBar(
+      behavior: SnackBarBehavior.floating,
+      backgroundColor: color,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      duration: const Duration(seconds: 3),
+      content: Row(
+        children: [
+          Icon(icon, color: Colors.white, size: 18),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              msg,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LoadingDialog extends StatelessWidget {
+  final GamePalette palette;
+  const _LoadingDialog({required this.palette});
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: palette.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(color: palette.border, width: 1),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: 22,
+              height: 22,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.5,
+                color: palette.accent,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Text(
+              'در حال بررسی...',
+              style: TextStyle(
+                color: palette.textPrimary,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
