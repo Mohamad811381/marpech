@@ -16,15 +16,113 @@ class MarpechApp extends StatefulWidget {
 }
 
 class _MarpechAppState extends State<MarpechApp> {
+  final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
   bool _updateAvailable = false;
+  bool _autoDialogShown = false;
 
   @override
   void initState() {
     super.initState();
-    // گوش دادن به سرویس بررسی نسخه
     UpdateService.instance.onUpdateAvailable = (_) {
-      if (mounted) setState(() => _updateAvailable = true);
+      if (!mounted) return;
+      setState(() => _updateAvailable = true);
+      // باز شدن خودکار دیالوگ — فقط یک بار
+      if (!_autoDialogShown) {
+        _autoDialogShown = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _showUpdateDialog(context);
+        });
+      }
     };
+  }
+
+  String _bannerMessage() {
+    final v = UpdateService.instance.remoteSemanticVersion;
+    if (v != null && v.isNotEmpty) {
+      return 'نسخه $v در دسترس است';
+    }
+    return 'نسخه جدید در دسترس است';
+  }
+
+  Future<void> _showUpdateDialog(BuildContext ctx) async {
+    if (!mounted) return;
+    final nav = _navigatorKey.currentContext;
+    if (nav == null) return;
+
+    showDialog(
+      context: nav,
+      builder: (dialogCtx) => AlertDialog(
+        backgroundColor: neonPalette.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(color: neonPalette.border, width: 1),
+        ),
+        title: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: neonPalette.accent.withOpacity(0.15),
+              ),
+              child: Icon(
+                Icons.rocket_launch_rounded,
+                color: neonPalette.accent,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'نسخه جدید آماده است',
+                style: TextStyle(
+                  color: neonPalette.textPrimary,
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          UpdateService.instance.remoteSemanticVersion != null
+              ? 'نسخه ${UpdateService.instance.remoteSemanticVersion} '
+                  'با امکانات و بهبودهای جدید در دسترس است.'
+              : 'آخرین نسخه با امکانات و بهبودهای جدید در دسترس است.',
+          style: TextStyle(
+            color: neonPalette.textMuted,
+            height: 1.6,
+            fontSize: 13,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogCtx).pop(),
+            child:
+                Text('بعداً', style: TextStyle(color: neonPalette.textMuted)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.of(dialogCtx).pop();
+              await reloadWebApp();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: neonPalette.accent,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            ),
+            child: const Text(
+              'به‌روزرسانی',
+              style: TextStyle(fontWeight: FontWeight.w800),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -35,6 +133,7 @@ class _MarpechAppState extends State<MarpechApp> {
         return MaterialApp(
           title: L10n.t('app_name'),
           debugShowCheckedModeBanner: false,
+          navigatorKey: _navigatorKey,
           theme: ThemeData(
             useMaterial3: true,
             brightness: Brightness.dark,
@@ -44,14 +143,13 @@ class _MarpechAppState extends State<MarpechApp> {
             textDirection: L10n.dir,
             child: Column(
               children: [
-                // بنر آپدیت (فقط وقتی نسخه جدید هست)
                 if (_updateAvailable)
                   UpdateBanner(
+                    message: _bannerMessage(),
                     onUpdate: () async {
                       await reloadWebApp();
                     },
                   ),
-                // محتوای اصلی اپ
                 Expanded(child: child ?? const SizedBox.shrink()),
               ],
             ),
