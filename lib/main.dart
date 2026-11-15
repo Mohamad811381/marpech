@@ -9,7 +9,6 @@ import 'services/localization_service.dart';
 import 'services/performance_service.dart';
 import 'services/player_progression_service.dart';
 import 'services/settings_service.dart';
-import 'services/update_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -34,10 +33,10 @@ void main() async {
     if (kDebugMode) debugPrint('[BOOT] Progression init error: $e\n$st');
   }
 
-  // ── بررسی نسخه جدید (فقط روی وب) ──
-  if (kIsWeb) {
-    UpdateService.instance.start(interval: const Duration(minutes: 2));
-  }
+  // توجه: چک دوره‌ای آپدیت حذف شد.
+  // چک آپدیت فقط از دو مسیر انجام می‌شود:
+  //  ۱) هنگام ورود → app.dart → checkForUpdateOnEntry
+  //  ۲) هنگام باز شدن Drawer → app_drawer.dart → checkNow
 
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,

@@ -1,12 +1,13 @@
-// ignore_for_file: deprecated_member_use
+// ignore_for_file: use_build_context_synchronously, deprecated_member_use
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'models/game_palette.dart';
 import 'screens/main_shell.dart';
 import 'services/localization_service.dart';
 import 'services/update_service.dart';
-import 'utils/web_reload.dart';
-import 'widgets/update_banner.dart';
+import 'widgets/update_dialog.dart';
 
 class MarpechApp extends StatefulWidget {
   const MarpechApp({super.key});
@@ -17,111 +18,87 @@ class MarpechApp extends StatefulWidget {
 
 class _MarpechAppState extends State<MarpechApp> {
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
-  bool _updateAvailable = false;
-  bool _autoDialogShown = false;
+  bool _dialogShown = false;
+
+  static const String _prefKey = 'last_shown_update_version';
+  static const String _forceAttemptsKeyPrefix = 'force_attempts_';
+  static const int _maxForceAttempts = 2;
 
   @override
   void initState() {
     super.initState();
-    UpdateService.instance.onUpdateAvailable = (_) {
-      if (!mounted) return;
-      setState(() => _updateAvailable = true);
-      // باز شدن خودکار دیالوگ — فقط یک بار
-      if (!_autoDialogShown) {
-        _autoDialogShown = true;
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _showUpdateDialog(context);
-        });
-      }
-    };
-  }
-
-  String _bannerMessage() {
-    final v = UpdateService.instance.remoteSemanticVersion;
-    if (v != null && v.isNotEmpty) {
-      return 'نسخه $v در دسترس است';
+    if (kIsWeb) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _checkForUpdateOnEntry();
+      });
     }
-    return 'نسخه جدید در دسترس است';
   }
 
-  Future<void> _showUpdateDialog(BuildContext ctx) async {
-    if (!mounted) return;
-    final nav = _navigatorKey.currentContext;
-    if (nav == null) return;
+  Future<void> _checkForUpdateOnEntry() async {
+    if (_dialogShown) return;
 
-    showDialog(
-      context: nav,
-      builder: (dialogCtx) => AlertDialog(
-        backgroundColor: neonPalette.surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: neonPalette.border, width: 1),
-        ),
-        title: Row(
-          children: [
-            Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: neonPalette.accent.withOpacity(0.15),
-              ),
-              child: Icon(
-                Icons.rocket_launch_rounded,
-                color: neonPalette.accent,
-                size: 22,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                'نسخه جدید آماده است',
-                style: TextStyle(
-                  color: neonPalette.textPrimary,
-                  fontSize: 17,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ),
-          ],
-        ),
-        content: Text(
-          UpdateService.instance.remoteSemanticVersion != null
-              ? 'نسخه ${UpdateService.instance.remoteSemanticVersion} '
-                  'با امکانات و بهبودهای جدید در دسترس است.'
-              : 'آخرین نسخه با امکانات و بهبودهای جدید در دسترس است.',
-          style: TextStyle(
-            color: neonPalette.textMuted,
-            height: 1.6,
-            fontSize: 13,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogCtx).pop(),
-            child:
-                Text('بعداً', style: TextStyle(color: neonPalette.textMuted)),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.of(dialogCtx).pop();
-              await reloadWebApp();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: neonPalette.accent,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            ),
-            child: const Text(
-              'به‌روزرسانی',
-              style: TextStyle(fontWeight: FontWeight.w800),
-            ),
-          ),
-        ],
-      ),
+    final result = await UpdateService.instance.checkNow();
+    if (!mounted || _dialogShown) return;
+
+    // در ورود فقط optional یا force ارزش نمایش دارند
+    if (result != UpdateCheckResult.optional &&
+        result != UpdateCheckResult.force) {
+      return;
+    }
+
+    final ctx = _navigatorKey.currentContext;
+    if (ctx == null) return;
+
+    final latest = UpdateService.instance.latestVersion;
+
+    // ── ضد تکرار / ضد لوپ ──
+    var skip = false;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+
+      if (result == UpdateCheckResult.force) {
+        // ضد loop: حداکثر ۲ بار برای هر نسخه‌ی latest
+        final key = '$_forceAttemptsKeyPrefix$latest';
+        final attempts = prefs.getInt(key) ?? 0;
+        if (attempts >= _maxForceAttempts) {
+          if (kDebugMode) {
+            debugPrint(
+              '[App] force guard tripped for latest=$latest '
+              '(attempts=$attempts)',
+            );
+          }
+          skip = true;
+        } else {
+          await prefs.setInt(key, attempts + 1);
+        }
+      } else {
+        // optional: فقط یک بار برای هر نسخه
+        final lastShown = prefs.getString(_prefKey);
+        if (latest != null && lastShown == latest) {
+          if (kDebugMode) {
+            debugPrint('[App] version $latest already shown, skipping');
+          }
+          skip = true;
+        } else {
+          await prefs.setString(_prefKey, latest ?? '');
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) debugPrint('[App] prefs error: $e');
+    }
+
+    if (skip) {
+      _dialogShown = true;
+      return;
+    }
+
+    if (!mounted) return;
+    _dialogShown = true;
+
+    await showUpdateDialog(
+      ctx,
+      showCancel: result == UpdateCheckResult.optional,
+      version: latest,
     );
   }
 
@@ -141,18 +118,7 @@ class _MarpechAppState extends State<MarpechApp> {
           ),
           builder: (context, child) => Directionality(
             textDirection: L10n.dir,
-            child: Column(
-              children: [
-                if (_updateAvailable)
-                  UpdateBanner(
-                    message: _bannerMessage(),
-                    onUpdate: () async {
-                      await reloadWebApp();
-                    },
-                  ),
-                Expanded(child: child ?? const SizedBox.shrink()),
-              ],
-            ),
+            child: child ?? const SizedBox.shrink(),
           ),
           home: const MainShell(),
         );

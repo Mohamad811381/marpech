@@ -8,9 +8,9 @@ import '../screens/about_screen.dart';
 import '../screens/privacy_policy_screen.dart';
 import '../services/localization_service.dart';
 import '../services/update_service.dart';
-import '../utils/web_reload.dart';
+import 'update_dialog.dart';
 
-class AppDrawer extends StatelessWidget {
+class AppDrawer extends StatefulWidget {
   final GamePalette palette;
   final bool muted;
   final VoidCallback onToggleMute;
@@ -24,7 +24,41 @@ class AppDrawer extends StatelessWidget {
     required this.onOpenSettings,
   });
 
-  GamePalette get p => palette;
+  @override
+  State<AppDrawer> createState() => _AppDrawerState();
+}
+
+class _AppDrawerState extends State<AppDrawer> {
+  bool _checking = false;
+  UpdateCheckResult? _lastResult;
+  String? _latestVersion;
+
+  GamePalette get p => widget.palette;
+  bool get muted => widget.muted;
+
+  @override
+  void initState() {
+    super.initState();
+    // چک خودکار موقع باز شدن Drawer (فقط وب)
+    if (kIsWeb) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _autoCheck());
+    }
+  }
+
+  Future<void> _autoCheck() async {
+    if (!mounted || _checking) return;
+    setState(() => _checking = true);
+    try {
+      final result = await UpdateService.instance.checkNow();
+      if (!mounted) return;
+      setState(() {
+        _lastResult = result;
+        _latestVersion = UpdateService.instance.latestVersion;
+      });
+    } finally {
+      if (mounted) setState(() => _checking = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +76,7 @@ class AppDrawer extends StatelessWidget {
               trailing: muted
                   ? L10n.t('drawer_sound_off')
                   : L10n.t('drawer_sound_on'),
-              onTap: onToggleMute,
+              onTap: widget.onToggleMute,
             ),
             _item(
               context,
@@ -50,13 +84,14 @@ class AppDrawer extends StatelessWidget {
               title: L10n.t('drawer_settings'),
               onTap: () {
                 Navigator.of(context).pop();
-                onOpenSettings();
+                widget.onOpenSettings();
               },
             ),
             _item(
               context,
               icon: Icons.system_update_alt_rounded,
               title: 'بررسی به‌روزرسانی',
+              trailingWidget: _updateBadge(),
               onTap: () => _checkForUpdate(context),
             ),
             _item(
@@ -92,6 +127,50 @@ class AppDrawer extends StatelessWidget {
       ),
     );
   }
+
+  // ─────────────── بج وضعیت آپدیت ───────────────
+
+  Widget _updateBadge() {
+    if (!kIsWeb) {
+      return _Badge(text: 'استور', color: p.textMuted, bgColor: p.surfaceAlt);
+    }
+    if (_checking) {
+      return SizedBox(
+        width: 16,
+        height: 16,
+        child: CircularProgressIndicator(strokeWidth: 2, color: p.accent),
+      );
+    }
+    switch (_lastResult) {
+      case UpdateCheckResult.optional:
+        return _Badge(
+          text: _latestVersion != null ? 'v$_latestVersion' : 'جدید',
+          color: Colors.white,
+          bgColor: p.accent,
+        );
+      case UpdateCheckResult.force:
+        return _Badge(
+          text: _latestVersion != null ? 'اجباری v$_latestVersion' : 'اجباری',
+          color: Colors.white,
+          bgColor: p.food, // رنگ هشدار
+        );
+      case UpdateCheckResult.upToDate:
+        return _Badge(
+          text: 'به‌روز',
+          color: Colors.white,
+          bgColor: Colors.green.shade600,
+        );
+      case UpdateCheckResult.error:
+      case null:
+        return _Badge(
+          text: 'نامشخص',
+          color: p.textMuted,
+          bgColor: p.surfaceAlt,
+        );
+    }
+  }
+
+  // ─────────────── header / item / footer ───────────────
 
   Widget _header(BuildContext context) {
     return Padding(
@@ -146,6 +225,7 @@ class AppDrawer extends StatelessWidget {
     required IconData icon,
     required String title,
     String? trailing,
+    Widget? trailingWidget,
     required VoidCallback onTap,
   }) {
     return Padding(
@@ -180,22 +260,13 @@ class AppDrawer extends StatelessWidget {
                     ),
                   ),
                 ),
-                if (trailing != null)
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: p.surfaceAlt,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      trailing,
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: p.textMuted,
-                      ),
-                    ),
+                if (trailingWidget != null)
+                  trailingWidget
+                else if (trailing != null)
+                  _Badge(
+                    text: trailing,
+                    color: p.textMuted,
+                    bgColor: p.surfaceAlt,
                   ),
               ],
             ),
@@ -225,217 +296,140 @@ class AppDrawer extends StatelessWidget {
     );
   }
 
-  // ─────────────── بررسی به‌روزرسانی ───────────────
+  // ─────────────── بررسی دستی ───────────────
 
   Future<void> _checkForUpdate(BuildContext context) async {
-    final navigator = Navigator.of(context, rootNavigator: true);
+    if (_checking) return;
+
+    if (!kIsWeb) {
+      final messenger = ScaffoldMessenger.of(context);
+      Navigator.of(context).pop();
+      messenger.showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          content: const Text('به‌روزرسانی از طریق استور انجام می‌شود'),
+          duration: const Duration(seconds: 3),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+      return;
+    }
+
+    final nav = Navigator.of(context, rootNavigator: true);
+    final navCtx = nav.context;
 
     // بستن دراور
-    navigator.pop();
+    Navigator.of(context).pop();
 
-    // کمی صبر تا انیمیشن بسته شدن تمام شود
+    // کمی صبر برای انیمیشن
     await Future<void>.delayed(const Duration(milliseconds: 250));
-
-    final navCtx = navigator.context;
     if (!navCtx.mounted) return;
 
-    // نمایش loading
+    // loading
     showDialog(
       context: navCtx,
       barrierDismissible: false,
+      useRootNavigator: true,
       builder: (_) => _LoadingDialog(palette: p),
     );
 
     final result = await UpdateService.instance.checkNow();
 
     if (!navCtx.mounted) return;
-    Navigator.of(navCtx).pop(); // بستن loading
-
+    Navigator.of(navCtx, rootNavigator: true).pop(); // بستن loading
     if (!navCtx.mounted) return;
 
     switch (result) {
-      case UpdateCheckResult.hasUpdate:
-        _showUpdateDialog(navCtx);
-        break;
-      case UpdateCheckResult.upToDate:
-        ScaffoldMessenger.of(navCtx).showSnackBar(
-          _buildSnack(
-            'نسخه شما به‌روز است ✅',
-            p.accent,
-            Icons.check_circle_rounded,
-          ),
+      case UpdateCheckResult.optional:
+        await showUpdateDialog(
+          navCtx,
+          showCancel: true,
+          version: UpdateService.instance.latestVersion,
         );
         break;
+
+      case UpdateCheckResult.force:
+        await showUpdateDialog(
+          navCtx,
+          showCancel: false,
+          version: UpdateService.instance.latestVersion,
+        );
+        break;
+
+      case UpdateCheckResult.upToDate:
+        await showUpToDateDialog(
+          navCtx,
+          version: UpdateService.instance.latestVersion,
+        );
+        break;
+
       case UpdateCheckResult.error:
         ScaffoldMessenger.of(navCtx).showSnackBar(
-          _buildSnack(
-            'اتصال برقرار نشد. اینترنت را بررسی کنید.',
-            p.food,
-            Icons.wifi_off_rounded,
+          SnackBar(
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: p.food,
+            duration: const Duration(seconds: 3),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            content: const Row(
+              children: [
+                Icon(Icons.wifi_off_rounded, color: Colors.white, size: 18),
+                SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'اتصال برقرار نشد',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         );
         break;
     }
   }
-
-  void _showUpdateDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (dialogCtx) => AlertDialog(
-        backgroundColor: p.surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: p.border, width: 1),
-        ),
-        title: Row(
-          children: [
-            Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: p.accent.withOpacity(0.15),
-              ),
-              child:
-                  Icon(Icons.rocket_launch_rounded, color: p.accent, size: 22),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                'نسخه جدید آماده است',
-                style: TextStyle(
-                  color: p.textPrimary,
-                  fontSize: 17,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ),
-          ],
-        ),
-        content: Text(
-          kIsWeb
-              ? 'آخرین نسخه با امکانات و بهبودهای جدید در دسترس است. برای دریافت، به‌روزرسانی کنید.'
-              : 'برای به‌روزرسانی، به فروشگاه اپلیکیشن مراجعه کنید.',
-          style: TextStyle(color: p.textMuted, height: 1.6, fontSize: 13),
-        ),
-        actions: [
-          if (kIsWeb) ...[
-            TextButton(
-              onPressed: () => Navigator.of(dialogCtx).pop(),
-              child: Text('بعداً', style: TextStyle(color: p.textMuted)),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                Navigator.of(dialogCtx).pop();
-                await reloadWebApp();
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: p.accent,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              ),
-              child: const Text(
-                'به‌روزرسانی',
-                style: TextStyle(fontWeight: FontWeight.w800),
-              ),
-            ),
-          ] else
-            TextButton(
-              onPressed: () => Navigator.of(dialogCtx).pop(),
-              child: Text('باشه', style: TextStyle(color: p.accent)),
-            ),
-        ],
-      ),
-    );
-  }
-
-  SnackBar _buildSnack(String msg, Color color, IconData icon) {
-    return SnackBar(
-      behavior: SnackBarBehavior.floating,
-      backgroundColor: color,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      duration: const Duration(seconds: 3),
-      content: Row(
-        children: [
-          Icon(icon, color: Colors.white, size: 18),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              msg,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
-class _VersionText extends StatefulWidget {
-  final TextStyle? style;
-  const _VersionText({this.style});
+// ─────────────── بج کوچک ───────────────
 
-  @override
-  State<_VersionText> createState() => _VersionTextState();
-}
+class _Badge extends StatelessWidget {
+  final String text;
+  final Color color;
+  final Color bgColor;
 
-class _VersionTextState extends State<_VersionText> {
-  String _version = 'v1.0.0';
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  Future<void> _load() async {
-    // ۱) تلاش با PackageInfo
-    try {
-      final info = await PackageInfo.fromPlatform();
-      if (!mounted) return;
-      final v = info.version;
-      final b = info.buildNumber;
-      if (v.isNotEmpty) {
-        setState(() {
-          _version = b.isNotEmpty ? 'v$v+$b' : 'v$v';
-        });
-        return;
-      }
-    } catch (_) {
-      // بی‌صدا رد شو، به fallback برو
-    }
-
-    // ۲) fallback: از UpdateService (که از app-version.json خوانده)
-    if (!mounted) return;
-    final sv = UpdateService.instance.semanticVersion;
-    if (sv != null && sv.isNotEmpty) {
-      setState(() => _version = 'v$sv');
-      return;
-    }
-
-    // ۳) fallback نهایی: اگر UpdateService هنوز لود نشده، از currentVersion
-    final cv = UpdateService.instance.currentVersion;
-    if (cv != null && cv.isNotEmpty) {
-      setState(() => _version = cv);
-    }
-    // اگر هیچ‌کدام نبود، همان v1.0.0 می‌ماند
-  }
+  const _Badge({
+    required this.text,
+    required this.color,
+    required this.bgColor,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      _version,
-      style: widget.style,
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          color: color,
+        ),
+      ),
     );
   }
 }
+
+// ─────────────── لودینگ ───────────────
 
 class _LoadingDialog extends StatelessWidget {
   final GamePalette palette;
@@ -475,5 +469,57 @@ class _LoadingDialog extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+// ─────────────── ویجت نسخه ───────────────
+
+class _VersionText extends StatefulWidget {
+  final TextStyle? style;
+  const _VersionText({this.style});
+
+  @override
+  State<_VersionText> createState() => _VersionTextState();
+}
+
+class _VersionTextState extends State<_VersionText> {
+  String _version = 'v...';
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    // ۱) نسخه‌ی تزریق‌شده در build (مسیر اصلی)
+    if (UpdateService.buildVersion.isNotEmpty) {
+      if (!mounted) return;
+      setState(() => _version = 'v${UpdateService.buildVersion}');
+      return;
+    }
+
+    // ۲) PackageInfo — فقط برای نمایش (نه برای چک آپدیت)
+    try {
+      final info = await PackageInfo.fromPlatform();
+      if (!mounted) return;
+      final v = info.version;
+      final b = info.buildNumber;
+      if (v.isNotEmpty) {
+        setState(() {
+          _version = b.isNotEmpty ? 'v$v+$b' : 'v$v';
+        });
+        return;
+      }
+    } catch (_) {}
+
+    // ۳) اگر هیچ‌کدام نبود (dev روی وب بدون dart-define)
+    if (!mounted) return;
+    setState(() => _version = 'v?');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(_version, style: widget.style);
   }
 }
