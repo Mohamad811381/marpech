@@ -2,7 +2,7 @@ const Map<String, Map<String, String>> translations = {
   'fa': {
     // ---------- عمومی ----------
     'app_name': 'مارپیچ',
-    'app_tagline': 'اسنیک ',
+    'app_tagline': 'اسنیک نئونی',
     'ok': 'باشه',
     'cancel': 'انصراف',
     'yes': 'بله',
