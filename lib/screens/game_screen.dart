@@ -61,18 +61,18 @@ class GameScreen extends StatefulWidget {
   State<GameScreen> createState() => _GameScreenState();
 }
 
-SnakeSkin _snakeSkin = SnakeSkin.basic;
-GhostSkin _ghostSkin = GhostSkin.basic;
-IntroAnimation _introAnimation = IntroAnimation.none;
-FoodSkin _foodSkin = FoodSkin.basic;
-TrailEffect _trail = TrailEffect.none;
-BoardPattern _pattern = BoardPattern.none;
-PatternIntensity _patternIntensity = PatternIntensity.subtle;
-
 class _GameScreenState extends State<GameScreen>
     with TickerProviderStateMixin, WidgetsBindingObserver {
   static const int cols = 20;
   static const int rows = 20;
+
+  SnakeSkin _snakeSkin = SnakeSkin.basic;
+  GhostSkin _ghostSkin = GhostSkin.basic;
+  IntroAnimation _introAnimation = IntroAnimation.none;
+  FoodSkin _foodSkin = FoodSkin.basic;
+  TrailEffect _trail = TrailEffect.none;
+  BoardPattern _pattern = BoardPattern.none;
+  PatternIntensity _patternIntensity = PatternIntensity.subtle;
 
   static const int _maxShields = 3;
   static const Duration _slowDuration = Duration(seconds: 5);
@@ -126,6 +126,7 @@ class _GameScreenState extends State<GameScreen>
   String? _gameSessionId;
   bool _gameXpCommitted = false;
   bool _levelXpCommitted = false;
+  bool _winInProgress = false;
 
   DateTime? _slowUntil;
   int _slowRemaining = 0;
@@ -214,6 +215,8 @@ class _GameScreenState extends State<GameScreen>
 
   // ⏱️ برای هر دو حالت (Time Attack + فصل ۴)
   bool get _timedOut => _isAnyTimed && _secondsLeft <= 0;
+  bool get _canRunClock =>
+      _isAnyTimed && _secondsLeft > 0 && !_isStarting && !_isEnding;
 
   int get _pityShields {
     if (!_isLevelMode) return 0;
@@ -243,7 +246,7 @@ class _GameScreenState extends State<GameScreen>
 
   Duration _baseTick() {
     if (_isLevelMode) {
-      final base = d.tick.inMilliseconds * kLevelSpeedMultiplier;
+      final base = widget.level!.tick.inMilliseconds * kLevelSpeedMultiplier;
       return Duration(
         milliseconds: (base / _chapterSpeedMultiplier).round(),
       );
@@ -349,15 +352,15 @@ class _GameScreenState extends State<GameScreen>
         if (_paused) {
           setState(() => _paused = false);
         }
-        if (!_pulse.isAnimating) _pulse.repeat(); // ← اضافه
+        if (!_pulse.isAnimating) _pulse.repeat();
         _audio.resumeMusic();
-        // تایمر رو از سر بگیر
-        if (_isAnyTimed && _secondsLeft > 0) {
+
+        // تایمر رو فقط وقتی از سر بگیر که بازی واقعاً شروع شده باشد
+        if (_canRunClock) {
           _startCountdown();
+
           // Safety: restart timer if it might have stopped
           if (!_isRecovering &&
-              !_isStarting &&
-              !_isEnding &&
               !_isShowingContinueDialog &&
               !_isShowingEmergencyDialog) {
             _timer?.cancel();
@@ -367,7 +370,6 @@ class _GameScreenState extends State<GameScreen>
       }
     }
   }
-
   // ---------- منطق بازی ----------
 
   Future<void> _initGame() async {
@@ -772,7 +774,9 @@ class _GameScreenState extends State<GameScreen>
       _moveAnim.value = 1.0;
     }
 
-    if (_isLevelMode && _foodsEaten >= widget.level!.targetFoods) {
+    if (_isLevelMode &&
+        !_winInProgress &&
+        _foodsEaten >= widget.level!.targetFoods) {
       _winLevel();
     }
   }
@@ -780,8 +784,7 @@ class _GameScreenState extends State<GameScreen>
   void _handleEat(math.Point<int> foodPos) {
     _foodsThisGame++;
     final eaten = _currentPowerUp;
-    var gained = 10 * d.multiplier;
-
+    var gained = 10 * (_isLevelMode ? 1 : d.multiplier);
     switch (eaten?.type) {
       case PowerUpType.golden:
         gained *= 2;
@@ -844,6 +847,9 @@ class _GameScreenState extends State<GameScreen>
   }
 
   Future<void> _winLevel() async {
+    if (_winInProgress || _won) return;
+    _winInProgress = true;
+
     _pulse.stop();
     _timer?.cancel();
     _slowTimer?.cancel();
@@ -1141,7 +1147,7 @@ class _GameScreenState extends State<GameScreen>
     _syncMoveDuration();
     _restartTimer();
     if (!_pulse.isAnimating) _pulse.repeat();
-    if (_isAnyTimed && _secondsLeft > 0) {
+    if (_canRunClock) {
       _startCountdown();
     }
   }
@@ -1445,6 +1451,7 @@ class _GameScreenState extends State<GameScreen>
   }
 
   void _updateSpeed() {
+    if (_isLevelMode) return;
     final base = d.tick.inMilliseconds;
     final speedup = (_score ~/ 50) * 5;
     final ms = math.max(60, base - speedup);
@@ -1941,9 +1948,8 @@ class _GameScreenState extends State<GameScreen>
         _isRecovering = false;
         _showShieldFlash = false;
       });
-
       _syncMoveDuration();
-      if (_isAnyTimed && _secondsLeft > 0) {
+      if (_canRunClock) {
         _startCountdown();
       }
       _restartTimer();
@@ -2075,7 +2081,7 @@ class _GameScreenState extends State<GameScreen>
     } else {
       _audio.resumeMusic();
       if (!_pulse.isAnimating) _pulse.repeat();
-      if (_isAnyTimed && _secondsLeft > 0) _startCountdown();
+      if (_canRunClock) _startCountdown();
     }
   }
 
@@ -2166,8 +2172,7 @@ class _GameScreenState extends State<GameScreen>
       setState(() => _paused = false);
       _audio.resumeMusic();
       if (!_pulse.isAnimating) _pulse.repeat(); // ← اضافه
-      // ⏱️ برای هر دو حالت
-      if (_isAnyTimed && _secondsLeft > 0) {
+      if (_canRunClock) {
         _startCountdown();
       }
     }

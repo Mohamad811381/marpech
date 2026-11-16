@@ -1,7 +1,8 @@
-// ignore_for_file: prefer_const_constructors, deprecated_member_use, use_build_context_synchronously
+// ignore_for_file: prefer_const_constructors, use_build_context_synchronously, deprecated_member_use
 
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:marpech/services/performance_service.dart';
 import 'package:marpech/services/theme_service.dart';
 import '../../models/difficulty.dart';
 import '../../models/game_palette.dart';
@@ -69,8 +70,21 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
     _boardPulse = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 4),
-    )..repeat();
+    );
     _load();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final enabled = TickerMode.of(context) &&
+        PerformanceService.effective != EffectiveQuality.low;
+
+    if (enabled && !_boardPulse.isAnimating) {
+      _boardPulse.repeat();
+    } else if (!enabled && _boardPulse.isAnimating) {
+      _boardPulse.stop();
+    }
   }
 
   @override
@@ -87,36 +101,38 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
   }
 
   Future<void> _load() async {
-    final d = await StorageService.getDifficultyIndex();
+    final results = await Future.wait<Object>([
+      StorageService.getDifficultyIndex(), // 0
+      StorageService.getTimeAttackBest(), // 1
+      LevelsService.getCompleted(), // 2
+      ShopService.getCoins(), // 3
+      DailyRewardService.getStatus(), // 4
+      StorageService.getPlayerXpTotal(), // 5
+      ShopService.getSelectedSnakeSkin(), // 6
+      ShopService.getSelectedFoodSkin(), // 7
+      ShopService.getSelectedTrail(), // 8
+      ShopService.getSelectedPattern(), // 9
+      ShopService.getPatternIntensity(), // 10
+    ]);
+
+    final d = results[0] as int;
     final diff = Difficulty.values[d.clamp(0, Difficulty.values.length - 1)];
     final b = await StorageService.getBestScore(diff);
-    final ta = await StorageService.getTimeAttackBest();
-    final completed = await LevelsService.getCompleted();
-    final coins = await ShopService.getCoins();
-    final reward = await DailyRewardService.getStatus();
-    final xp = await StorageService.getPlayerXpTotal();
-
-    // 🎨 اسکین‌های انتخاب‌شده کاربر
-    final snakeId = await ShopService.getSelectedSnakeSkin();
-    final foodId = await ShopService.getSelectedFoodSkin();
-    final trailId = await ShopService.getSelectedTrail();
-    final patternId = await ShopService.getSelectedPattern();
-    final intensityId = await ShopService.getPatternIntensity();
 
     if (!mounted) return;
     setState(() {
       _difficulty = diff;
       _best = b;
-      _timeAttackBest = ta;
-      _completedLevels = completed.length;
-      _coins = coins;
-      _rewardStatus = reward;
-      _playerXp = xp;
-      _previewSnakeSkin = SnakeSkin.fromId(snakeId);
-      _previewFoodSkin = FoodSkin.fromId(foodId);
-      _previewTrail = TrailEffect.fromId(trailId);
-      _previewPattern = BoardPattern.fromId(patternId);
-      _previewIntensity = PatternIntensity.fromId(intensityId);
+      _timeAttackBest = results[1] as int;
+      _completedLevels = (results[2] as Iterable).length;
+      _coins = results[3] as int;
+      _rewardStatus = results[4] as DailyRewardStatus;
+      _playerXp = results[5] as int;
+      _previewSnakeSkin = SnakeSkin.fromId(results[6] as String);
+      _previewFoodSkin = FoodSkin.fromId(results[7] as String);
+      _previewTrail = TrailEffect.fromId(results[8] as String);
+      _previewPattern = BoardPattern.fromId(results[9] as String);
+      _previewIntensity = PatternIntensity.fromId(results[10] as String);
       _loaded = true;
     });
   }
@@ -161,16 +177,19 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
 
   Future<void> _startFree() async {
     await _audio.playSfx(Sfx.button);
+    if (!mounted) return;
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => GameScreen(difficulty: _difficulty, palette: p),
       ),
     );
+    if (!mounted) return;
     await _load();
   }
 
   Future<void> _startTimeAttack() async {
     await _audio.playSfx(Sfx.button);
+    if (!mounted) return;
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => GameScreen(
@@ -180,11 +199,13 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
         ),
       ),
     );
+    if (!mounted) return;
     await _load();
   }
 
   Future<void> _openLevels() async {
     await _audio.playSfx(Sfx.button);
+    if (!mounted) return;
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => ChaptersScreen(
@@ -193,11 +214,14 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
         ),
       ),
     );
+    if (!mounted) return;
     await _load();
   }
 
   Future<void> _openDailyReward() async {
     await _audio.playSfx(Sfx.button);
+    if (!mounted) return;
+
     final status = await DailyRewardService.getStatus();
     if (!mounted) return;
 
@@ -220,6 +244,7 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
       builder: (_) => DailyRewardDialog(palette: p, status: status),
     );
 
+    if (!mounted) return;
     await _load();
 
     if (result != null && result > 0 && mounted) {
@@ -314,30 +339,34 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
   }
 
   Widget _coinDisplay() {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 7,
-          height: 7,
-          decoration: const BoxDecoration(
-            color: Color(0xFFFFD700),
-            shape: BoxShape.circle,
-          ),
+    return Material(
+      color: p.surface,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: p.border),
         ),
-        const SizedBox(width: 8),
-        Text(
-          '$_coins',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w700,
-            color: p.textPrimary,
-          ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.monetization_on_rounded, color: p.food, size: 18),
+            const SizedBox(width: 6),
+            Text(
+              '$_coins',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                color: p.food,
+                height: 1.2,
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
-
   // ─────────────────────────────────────────
   // MASTHEAD
   // ─────────────────────────────────────────
@@ -518,7 +547,7 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
               Container(width: 16, height: 1, color: p.accent),
               const SizedBox(height: 12),
               Text(
-                'LV. $level',
+                'Lv. $level',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
