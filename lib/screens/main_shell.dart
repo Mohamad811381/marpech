@@ -1,6 +1,7 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
+import 'package:marpech/services/theme_service.dart';
 import '../models/game_palette.dart';
 import '../services/audio_service.dart';
 import '../services/daily_reward_service.dart';
@@ -26,7 +27,6 @@ class MainShell extends StatefulWidget {
 
 class _MainShellState extends State<MainShell> {
   int _currentIndex = 0;
-  int _paletteIndex = 0;
   int _homeReloadToken = 0; // ← جدید
   bool _muted = false;
   bool _loaded = false;
@@ -39,36 +39,39 @@ class _MainShellState extends State<MainShell> {
 
   bool get _isAnyDialogShowing =>
       _isShowingLevelUpDialog || _isShowingRewardDialog;
+GamePalette _palette = neonPalette;
 
-  GamePalette get _palette =>
-      palettes[_paletteIndex.clamp(0, palettes.length - 1)];
+@override
+void initState() {
+  super.initState();
+  PlayerProgressionService.pendingLevelUps.addListener(_onProgressionChanged);
+  PlayerProgressionService.dialogSafe.addListener(_onProgressionChanged);
+  ThemeService.mode.addListener(_onThemeChanged);
+  ThemeService.darkPalette.addListener(_onThemeChanged);
+  _load();
+}
 
-  @override
-  void initState() {
-    super.initState();
-    PlayerProgressionService.pendingLevelUps.addListener(_onProgressionChanged);
-    PlayerProgressionService.dialogSafe.addListener(_onProgressionChanged);
-    _load();
-  }
+@override
+void dispose() {
+  PlayerProgressionService.pendingLevelUps
+      .removeListener(_onProgressionChanged);
+  PlayerProgressionService.dialogSafe.removeListener(_onProgressionChanged);
+  ThemeService.mode.removeListener(_onThemeChanged);
+  ThemeService.darkPalette.removeListener(_onThemeChanged);
+  _isLevelUpDialogScheduled = false;
+  _isShowingLevelUpDialog = false;
+  super.dispose();
+}
 
-  @override
-  void dispose() {
-    PlayerProgressionService.pendingLevelUps
-        .removeListener(_onProgressionChanged);
-    PlayerProgressionService.dialogSafe.removeListener(_onProgressionChanged);
-    _isLevelUpDialogScheduled = false;
-    _isShowingLevelUpDialog = false;
-    super.dispose();
-  }
-
+void _onThemeChanged() {
+  if (mounted) setState(() {});
+}
   Future<void> _load() async {
-    final p = await StorageService.getPaletteIndex();
     await SettingsService.load();
     final s = SettingsService.current;
 
     if (!mounted) return;
     setState(() {
-      _paletteIndex = p.clamp(0, palettes.length - 1);
       _muted = !(s.sfx || s.music);
       _loaded = true;
     });
@@ -116,11 +119,9 @@ class _MainShellState extends State<MainShell> {
     }
   }
 
-  Future<void> _reloadPalette() async {
-    final p = await StorageService.getPaletteIndex();
-    if (!mounted) return;
-    setState(() => _paletteIndex = p.clamp(0, palettes.length - 1));
-  }
+Future<void> _reloadPalette() async {
+  if (mounted) setState(() {});
+}
 
   void _openProgressTab() {
     setState(() => _currentIndex = 1);
@@ -153,9 +154,11 @@ class _MainShellState extends State<MainShell> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    if (!_loaded) {
+@override
+Widget build(BuildContext context) {
+  _palette = ThemeService.resolve(context);
+
+  if (!_loaded) {
       return Scaffold(
         backgroundColor: _palette.bg,
         body: Center(

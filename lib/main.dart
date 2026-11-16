@@ -9,34 +9,31 @@ import 'services/localization_service.dart';
 import 'services/performance_service.dart';
 import 'services/player_progression_service.dart';
 import 'services/settings_service.dart';
+import 'services/theme_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // ── پایه: زبان + کیفیت گرافیک + تنظیمات ──
+  // ── پایه: زبان + کیفیت گرافیک + تنظیمات + تم ──
   await LocalizationService.instance.load();
   await PerformanceService.load();
   await SettingsService.load();
+  await ThemeService.load();
 
-  // ── صدا: مقداردهی اولیه (idempotent، فقط یک‌بار اجرا می‌شه) ──
+  // ── صدا ──
   try {
     await AudioService().init();
   } catch (e, st) {
     if (kDebugMode) debugPrint('[BOOT] Audio init error: $e\n$st');
   }
 
-  // ── پیشرفت بازیکن: schema + recovery ──
+  // ── پیشرفت بازیکن ──
   try {
     await PlayerProgressionService.ensureSchema();
     await PlayerProgressionService.recoverPending();
   } catch (e, st) {
     if (kDebugMode) debugPrint('[BOOT] Progression init error: $e\n$st');
   }
-
-  // توجه: چک دوره‌ای آپدیت حذف شد.
-  // چک آپدیت فقط از دو مسیر انجام می‌شود:
-  //  ۱) هنگام ورود → app.dart → checkForUpdateOnEntry
-  //  ۲) هنگام باز شدن Drawer → app_drawer.dart → checkNow
 
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,

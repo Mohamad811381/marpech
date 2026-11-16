@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:marpech/services/player_progression_service.dart';
+import 'package:marpech/services/theme_service.dart';
 import '../models/game_palette.dart';
 import '../models/game_settings.dart';
 import '../models/skins.dart';
@@ -30,6 +31,7 @@ class _SettingsScreenState extends State<SettingsScreen>
     with SingleTickerProviderStateMixin {
   late GameSettings _settings;
   late GamePalette _currentPalette;
+  GamePalette get p => _currentPalette;
   final _audio = AudioService();
 
   String _selectedThemeId = 'neon';
@@ -47,7 +49,6 @@ class _SettingsScreenState extends State<SettingsScreen>
   Set<String> _unlockedFoodSkins = {'basic'};
   Set<String> _unlockedTrails = {'none'};
   Set<String> _unlockedPatterns = {'none'};
-  GamePalette get p => _currentPalette;
 
   PatternIntensity _patternIntensity = PatternIntensity.subtle;
   int _coins = 0;
@@ -74,6 +75,8 @@ class _SettingsScreenState extends State<SettingsScreen>
     super.initState();
     _settings = SettingsService.current;
     _currentPalette = widget.palette;
+    ThemeService.mode.addListener(_onThemeChanged);
+    ThemeService.darkPalette.addListener(_onThemeChanged);
     _boardPulse = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 4),
@@ -85,7 +88,20 @@ class _SettingsScreenState extends State<SettingsScreen>
   @override
   void dispose() {
     _boardPulse.dispose();
+    ThemeService.mode.removeListener(_onThemeChanged);
+    ThemeService.darkPalette.removeListener(_onThemeChanged);
     super.dispose();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _currentPalette = ThemeService.resolve(context);
+  }
+
+  void _onThemeChanged() {
+    if (!mounted) return;
+    setState(() => _currentPalette = ThemeService.resolve(context));
   }
 
   Future<void> _loadHud() async {
@@ -185,7 +201,14 @@ class _SettingsScreenState extends State<SettingsScreen>
                   _sectionCard(
                     icon: Icons.palette_rounded,
                     title: L10n.t('settings_theme_select'),
-                    child: _themeRow(),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _themeModeRow(),
+                        const SizedBox(height: 14),
+                        _themeRow(),
+                      ],
+                    ),
                   ),
                   // ───── اسکین‌ها (کد پیوست) ─────
                   _section(
@@ -672,14 +695,8 @@ class _SettingsScreenState extends State<SettingsScreen>
           onTap: owned
               ? () async {
                   await _audio.playSfx(Sfx.button);
-                  final idx = palettes.indexWhere((pp) => pp.id == pal.id);
-                  await StorageService.setPaletteIndex(idx);
-                  if (mounted) {
-                    setState(() {
-                      _selectedThemeId = pal.id;
-                      _currentPalette = pal;
-                    });
-                  }
+                  await ThemeService.setDarkPalette(pal);
+                  if (mounted) setState(() => _selectedThemeId = pal.id);
                 }
               : null,
         );
@@ -687,6 +704,18 @@ class _SettingsScreenState extends State<SettingsScreen>
     );
   }
 
+  Widget _themeModeRow() {
+    return _segmentRow<ThemeMode>(
+      title: L10n.t('settings_theme_mode'),
+      options: ThemeMode.values,
+      current: ThemeService.mode.value,
+      labelOf: (m) => L10n.t('settings_theme_${m.name}'),
+      onChanged: (m) async {
+        await _audio.playSfx(Sfx.button);
+        await ThemeService.setMode(m);
+      },
+    );
+  }
   // ═══════════════════════════════════════════════════════════
   // 🆕 GAMEPLAY
   // ═══════════════════════════════════════════════════════════

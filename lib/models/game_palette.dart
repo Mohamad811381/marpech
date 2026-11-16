@@ -300,6 +300,30 @@ const marpechLegendPalette = GamePalette(
   onPrimary: Color(0xFF0A0014),
 );
 
+
+
+
+// ☀️ روشن (تم مستقل، جدا از پالت‌های تاریک)
+const lightPalette = GamePalette(
+  id: 'light',
+  bg: Color(0xFFF5F7FA),
+  surface: Color(0xFFFFFFFF),
+  surfaceAlt: Color(0xFFEEF2F6),
+  border: Color(0xFFD0D8E2),
+  grid: Color(0xFFE3E9F0),
+  board: Color(0xFFE9EEF4),
+  snakeHead: Color(0xFF0E8C6E),
+  snakeTail: Color(0xFF4FC3A1),
+  food: Color(0xFFFF4D6D),
+  accent: Color(0xFF00A884),
+  textMuted: Color(0xFF6B7A8F),
+  textPrimary: Color(0xFF0F1720),
+  onPrimary: Color(0xFFFFFFFF),
+);
+
+
+
+
 const palettes = [
   neonPalette,
   sunsetPalette,

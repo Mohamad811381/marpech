@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'models/game_palette.dart';
 import 'screens/main_shell.dart';
 import 'services/localization_service.dart';
+import 'services/theme_service.dart';
 import 'services/update_service.dart';
 import 'widgets/update_dialog.dart';
 
@@ -48,8 +49,6 @@ class _MarpechAppState extends State<MarpechApp> {
 
     final latest = UpdateService.instance.latestVersion;
 
-    // اختیاری: برای هر نسخه فقط یک‌بار در ورود نشان داده شود.
-    // اجباری: هیچ گارد یا شمارنده‌ای ندارد؛ تا آپدیت نشود بسته نمی‌شود.
     if (result == UpdateCheckResult.optional) {
       final alreadyShown = await _markOptionalShown(latest);
       if (alreadyShown) return;
@@ -82,17 +81,22 @@ class _MarpechAppState extends State<MarpechApp> {
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: LocalizationService.instance,
+      listenable: Listenable.merge([
+        LocalizationService.instance,
+        ThemeService.mode,
+        ThemeService.darkPalette,
+      ]),
       builder: (context, _) {
         return MaterialApp(
           title: L10n.t('app_name'),
           debugShowCheckedModeBanner: false,
           navigatorKey: _navigatorKey,
-          theme: ThemeData(
-            useMaterial3: true,
-            brightness: Brightness.dark,
-            scaffoldBackgroundColor: neonPalette.bg,
+          theme: ThemeService.buildTheme(lightPalette, Brightness.light),
+          darkTheme: ThemeService.buildTheme(
+            ThemeService.darkPalette.value,
+            Brightness.dark,
           ),
+          themeMode: ThemeService.mode.value,
           builder: (context, child) => Directionality(
             textDirection: L10n.dir,
             child: child ?? const SizedBox.shrink(),

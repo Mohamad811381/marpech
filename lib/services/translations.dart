@@ -754,6 +754,11 @@ const Map<String, Map<String, String>> translations = {
     'update_ok': 'باشه',
     'version_unknown': '?',
     'version_loading': 'v...',
+    'settings_theme_mode': 'حالت نمایش',
+    'settings_theme_system': 'سیستم',
+    'settings_theme_light': 'روشن',
+    'settings_theme_dark': 'تاریک',
+    'palette_light_name': 'روشن',
   },
   'en': {
     // ---------- Common ----------
@@ -1508,5 +1513,10 @@ const Map<String, Map<String, String>> translations = {
     'update_ok': 'OK',
     'version_unknown': '?',
     'version_loading': 'v...',
+    'settings_theme_mode': 'Display mode',
+    'settings_theme_system': 'System',
+    'settings_theme_light': 'Light',
+    'settings_theme_dark': 'Dark',
+    'palette_light_name': 'Light',
   },
 };
