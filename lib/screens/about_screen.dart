@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:marpech/services/update_service.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import '../models/game_palette.dart';
 import '../services/localization_service.dart';
 import '../services/levels_service.dart';
@@ -187,28 +188,13 @@ class _AboutScreenState extends State<AboutScreen> {
               children: [
                 Icon(Icons.local_offer_rounded, size: 12, color: p.textMuted),
                 const SizedBox(width: 6),
-                Text(
-                  '${L10n.t('about_version')} ${_versionNumber()}',
-                  textDirection: TextDirection.ltr,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: p.textMuted,
-                  ),
-                ),
+                _AppVersionLabel(color: p.textMuted),
               ],
             ),
           ),
         ],
       ),
     );
-  }
-
-  String _versionNumber() {
-    const v = UpdateService.buildVersion;
-    const b = UpdateService.buildNumber;
-    if (v.isEmpty) return '?';
-    return b.isNotEmpty ? 'v$v+$b' : 'v$v';
   }
 
   // ---------- کارت آمار بازیکن ----------
@@ -648,6 +634,58 @@ class _AboutScreenState extends State<AboutScreen> {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _AppVersionLabel extends StatefulWidget {
+  final Color color;
+  const _AppVersionLabel({required this.color});
+
+  @override
+  State<_AppVersionLabel> createState() => _AppVersionLabelState();
+}
+
+class _AppVersionLabelState extends State<_AppVersionLabel> {
+  String? _number;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    String result;
+    if (UpdateService.buildVersion.isNotEmpty) {
+      // وب (CI) و هر بیلدی که dart-define دارد
+      const v = UpdateService.buildVersion;
+      const b = UpdateService.buildNumber;
+      result = b.isNotEmpty ? 'v$v+$b' : 'v$v';
+    } else {
+      // موبایل: نسخه‌ی واقعی بسته‌ی نصب‌شده
+      try {
+        final info = await PackageInfo.fromPlatform();
+        final b = info.buildNumber;
+        result = b.isNotEmpty ? 'v${info.version}+$b' : 'v${info.version}';
+      } catch (_) {
+        result = L10n.t('version_unknown');
+      }
+    }
+    if (!mounted) return;
+    setState(() => _number = result);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      '${L10n.t('about_version')} ${_number ?? L10n.t('version_loading')}',
+      textDirection: TextDirection.ltr,
+      style: TextStyle(
+        fontSize: 11,
+        fontWeight: FontWeight.w700,
+        color: widget.color,
+      ),
     );
   }
 }
