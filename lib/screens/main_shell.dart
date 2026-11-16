@@ -39,33 +39,34 @@ class _MainShellState extends State<MainShell> {
 
   bool get _isAnyDialogShowing =>
       _isShowingLevelUpDialog || _isShowingRewardDialog;
-GamePalette _palette = neonPalette;
+  GamePalette _palette = neonPalette;
 
-@override
-void initState() {
-  super.initState();
-  PlayerProgressionService.pendingLevelUps.addListener(_onProgressionChanged);
-  PlayerProgressionService.dialogSafe.addListener(_onProgressionChanged);
-  ThemeService.mode.addListener(_onThemeChanged);
-  ThemeService.darkPalette.addListener(_onThemeChanged);
-  _load();
-}
+  @override
+  void initState() {
+    super.initState();
+    PlayerProgressionService.pendingLevelUps.addListener(_onProgressionChanged);
+    PlayerProgressionService.dialogSafe.addListener(_onProgressionChanged);
+    ThemeService.mode.addListener(_onThemeChanged);
+    ThemeService.darkPalette.addListener(_onThemeChanged);
+    _load();
+  }
 
-@override
-void dispose() {
-  PlayerProgressionService.pendingLevelUps
-      .removeListener(_onProgressionChanged);
-  PlayerProgressionService.dialogSafe.removeListener(_onProgressionChanged);
-  ThemeService.mode.removeListener(_onThemeChanged);
-  ThemeService.darkPalette.removeListener(_onThemeChanged);
-  _isLevelUpDialogScheduled = false;
-  _isShowingLevelUpDialog = false;
-  super.dispose();
-}
+  @override
+  void dispose() {
+    PlayerProgressionService.pendingLevelUps
+        .removeListener(_onProgressionChanged);
+    PlayerProgressionService.dialogSafe.removeListener(_onProgressionChanged);
+    ThemeService.mode.removeListener(_onThemeChanged);
+    ThemeService.darkPalette.removeListener(_onThemeChanged);
+    _isLevelUpDialogScheduled = false;
+    _isShowingLevelUpDialog = false;
+    super.dispose();
+  }
 
-void _onThemeChanged() {
-  if (mounted) setState(() {});
-}
+  void _onThemeChanged() {
+    if (mounted) setState(() {});
+  }
+
   Future<void> _load() async {
     await SettingsService.load();
     final s = SettingsService.current;
@@ -119,9 +120,9 @@ void _onThemeChanged() {
     }
   }
 
-Future<void> _reloadPalette() async {
-  if (mounted) setState(() {});
-}
+  Future<void> _reloadPalette() async {
+    if (mounted) setState(() {});
+  }
 
   void _openProgressTab() {
     setState(() => _currentIndex = 1);
@@ -154,11 +155,11 @@ Future<void> _reloadPalette() async {
     }
   }
 
-@override
-Widget build(BuildContext context) {
-  _palette = ThemeService.resolve(context);
+  @override
+  Widget build(BuildContext context) {
+    _palette = ThemeService.resolve(context);
 
-  if (!_loaded) {
+    if (!_loaded) {
       return Scaffold(
         backgroundColor: _palette.bg,
         body: Center(
@@ -181,6 +182,7 @@ Widget build(BuildContext context) {
           muted: _muted,
           onToggleMute: _toggleMute,
           onOpenSettings: _openSettings,
+          onPaletteChanged: _reloadPalette,
         ),
         body: SafeArea(
           bottom: false,
