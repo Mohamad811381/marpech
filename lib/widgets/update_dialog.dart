@@ -90,8 +90,7 @@ Future<void> showUpdateDialog(
                       child: _PrimaryButton(
                         label: 'به‌روزرسانی',
                         onPressed: () async {
-                          await reloadWebApp();
-                        },
+await reloadWebApp(version);                        },
                       ),
                     ),
                   ],
@@ -102,8 +101,7 @@ Future<void> showUpdateDialog(
                   child: _PrimaryButton(
                     label: 'به‌روزرسانی',
                     onPressed: () async {
-                      await reloadWebApp();
-                    },
+await reloadWebApp(version);                    },
                   ),
                 ),
             ],

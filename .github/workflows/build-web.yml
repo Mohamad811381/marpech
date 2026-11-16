@@ -14,15 +14,12 @@ concurrency:
   group: "pages"
   cancel-in-progress: false
 
-# ═══════════════════════════════════════════════════════════════════
-#  تنظیمات آپدیت — این‌ها را دستی عوض کن
-# ═══════════════════════════════════════════════════════════════════
 env:
-  # حداقل نسخه‌ی مجاز. اگر نسخه‌ی کاربر از این کمتر بود → آپدیت اجباری.
-  # برای فعال کردن force، این را برابر نسخه‌ای بگذار که می‌خواهی از آن به بعد اجباری شود.
-  # مثال: اگر MIN_VERSION=1.0.4 باشد، کاربران نسخه‌ی 1.0.3 و پایین‌تر اجبار می‌شوند.
-  MIN_VERSION: "1.0.3"
-# ═══════════════════════════════════════════════════════════════════
+  # حداقل نسخه‌ی مجاز (semver). کاربران پایین‌تر از این → آپدیت اجباری.
+  # وقتی باید همه‌ی نسخه‌های قبلی اجباری شوند، این مقدار را بالا ببرید.
+  MIN_VERSION: "1.0.4"
+  # نسخه‌ی Flutter pin شده تا CI و build محلی یکی باشند.
+  FLUTTER_VERSION: "3.50.0"
 
 jobs:
   build:
@@ -30,19 +27,18 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      - name: Setup Flutter (Stable)
+      - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
           cache: true
 
       - name: Flutter Pub Get
         run: flutter pub get
 
-      - name: Read version from pubspec
+      - name: Read semver from pubspec
         id: ver
         run: |
           set -euo pipefail
@@ -51,16 +47,29 @@ jobs:
             echo "::error::Could not parse version from pubspec.yaml"
             exit 1
           fi
-          if [[ "$VERSION" == *"+"* ]]; then
-            SEMVER="${VERSION%%+*}"
-            BUILD="${VERSION#*+}"
-          else
-            SEMVER="$VERSION"
-            BUILD="0"
+          SEMVER="${VERSION%%+*}"
+          if [[ ! "$SEMVER" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::semver نامعتبر: $SEMVER"
+            exit 1
           fi
-          echo "raw=$VERSION  semver=$SEMVER  build=$BUILD"
+          echo "raw=$VERSION semver=$SEMVER"
           echo "semver=$SEMVER" >> "$GITHUB_OUTPUT"
-          echo "build=$BUILD"  >> "$GITHUB_OUTPUT"
+
+      - name: Validate MIN_VERSION
+        env:
+          LATEST: ${{ steps.ver.outputs.semver }}
+        run: |
+          set -euo pipefail
+          re='^[0-9]+\.[0-9]+\.[0-9]+$'
+          if [[ ! "$MIN_VERSION" =~ $re ]]; then
+            echo "::error::MIN_VERSION نامعتبر: $MIN_VERSION"
+            exit 1
+          fi
+          HIGHER=$(printf '%s\n%s\n' "$MIN_VERSION" "$LATEST" | sort -V | tail -n1)
+          if [ "$HIGHER" != "$LATEST" ]; then
+            echo "::error::MIN_VERSION ($MIN_VERSION) از نسخه‌ی فعلی ($LATEST) بزرگ‌تر است"
+            exit 1
+          fi
 
       - name: Build Web (Release)
         run: |
@@ -69,30 +78,37 @@ jobs:
             --base-href /marpech/ \
             --dart-define=APP_VERSION=${{ steps.ver.outputs.semver }}
 
-      - name: Generate app-version.json (after build)
+      - name: Cache-bust entry files
         run: |
           set -euo pipefail
-          LATEST="${{ steps.ver.outputs.semver }}"
-          MIN="${{ env.MIN_VERSION }}"
+          ID="${GITHUB_SHA::8}"
+          cd build/web
 
-          if [ -z "$LATEST" ]; then
-            echo "::error::LATEST version is empty"
+          mv main.dart.js "main.dart.${ID}.js"
+          mv flutter_bootstrap.js "flutter_bootstrap.${ID}.js"
+          sed -i "s/main\.dart\.js/main.dart.${ID}.js/g" "flutter_bootstrap.${ID}.js"
+          sed -i "s/flutter_bootstrap\.js/flutter_bootstrap.${ID}.js/g" index.html
+
+          # تأیید: هیچ ارجاع قدیمی نماند و ارجاع جدید درست باشد
+          if grep -q 'main\.dart\.js' "flutter_bootstrap.${ID}.js"; then
+            echo "::error::ارجاع قدیمی main.dart.js در bootstrap باقی مانده"
             exit 1
           fi
-          if [ -z "$MIN" ]; then
-            echo "::error::MIN_VERSION env is empty"
-            exit 1
-          fi
+          grep -q "main\.dart\.${ID}\.js" "flutter_bootstrap.${ID}.js" || {
+            echo "::error::ارجاع جدید main در bootstrap پیدا نشد"; exit 1; }
+          grep -q "flutter_bootstrap\.${ID}\.js" index.html || {
+            echo "::error::ارجاع جدید bootstrap در index.html پیدا نشد"; exit 1; }
 
-          cat > build/web/app-version.json <<EOF
-          {"latest":"$LATEST","min_version":"$MIN"}
-          EOF
+          echo "BUILD_ID=$ID" >> "$GITHUB_ENV"
 
+      - name: Generate app-version.json
+        run: |
+          set -euo pipefail
+          printf '{"latest":"%s","min_version":"%s","build_id":"%s"}\n' \
+            "${{ steps.ver.outputs.semver }}" "$MIN_VERSION" "$BUILD_ID" \
+            > build/web/app-version.json
           echo "=== app-version.json ==="
           cat build/web/app-version.json
-          echo ""
-          echo "=== sanity check ==="
-          echo "latest=$LATEST  min=$MIN"
 
       - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v3

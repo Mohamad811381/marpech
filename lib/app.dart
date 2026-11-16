@@ -21,8 +21,6 @@ class _MarpechAppState extends State<MarpechApp> {
   bool _dialogShown = false;
 
   static const String _prefKey = 'last_shown_update_version';
-  static const String _forceAttemptsKeyPrefix = 'force_attempts_';
-  static const int _maxForceAttempts = 2;
 
   @override
   void initState() {
@@ -40,7 +38,6 @@ class _MarpechAppState extends State<MarpechApp> {
     final result = await UpdateService.instance.checkNow();
     if (!mounted || _dialogShown) return;
 
-    // در ورود فقط optional یا force ارزش نمایش دارند
     if (result != UpdateCheckResult.optional &&
         result != UpdateCheckResult.force) {
       return;
@@ -51,45 +48,11 @@ class _MarpechAppState extends State<MarpechApp> {
 
     final latest = UpdateService.instance.latestVersion;
 
-    // ── ضد تکرار / ضد لوپ ──
-    var skip = false;
-    try {
-      final prefs = await SharedPreferences.getInstance();
-
-      if (result == UpdateCheckResult.force) {
-        // ضد loop: حداکثر ۲ بار برای هر نسخه‌ی latest
-        final key = '$_forceAttemptsKeyPrefix$latest';
-        final attempts = prefs.getInt(key) ?? 0;
-        if (attempts >= _maxForceAttempts) {
-          if (kDebugMode) {
-            debugPrint(
-              '[App] force guard tripped for latest=$latest '
-              '(attempts=$attempts)',
-            );
-          }
-          skip = true;
-        } else {
-          await prefs.setInt(key, attempts + 1);
-        }
-      } else {
-        // optional: فقط یک بار برای هر نسخه
-        final lastShown = prefs.getString(_prefKey);
-        if (latest != null && lastShown == latest) {
-          if (kDebugMode) {
-            debugPrint('[App] version $latest already shown, skipping');
-          }
-          skip = true;
-        } else {
-          await prefs.setString(_prefKey, latest ?? '');
-        }
-      }
-    } catch (e) {
-      if (kDebugMode) debugPrint('[App] prefs error: $e');
-    }
-
-    if (skip) {
-      _dialogShown = true;
-      return;
+    // اختیاری: برای هر نسخه فقط یک‌بار در ورود نشان داده شود.
+    // اجباری: هیچ گارد یا شمارنده‌ای ندارد؛ تا آپدیت نشود بسته نمی‌شود.
+    if (result == UpdateCheckResult.optional) {
+      final alreadyShown = await _markOptionalShown(latest);
+      if (alreadyShown) return;
     }
 
     if (!mounted) return;
@@ -100,6 +63,20 @@ class _MarpechAppState extends State<MarpechApp> {
       showCancel: result == UpdateCheckResult.optional,
       version: latest,
     );
+  }
+
+  /// true برمی‌گرداند اگر برای این نسخه قبلاً نشان داده شده.
+  Future<bool> _markOptionalShown(String? latest) async {
+    if (latest == null) return false;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (prefs.getString(_prefKey) == latest) return true;
+      await prefs.setString(_prefKey, latest);
+      return false;
+    } catch (e) {
+      if (kDebugMode) debugPrint('[App] prefs error: $e');
+      return false;
+    }
   }
 
   @override

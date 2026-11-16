@@ -5,107 +5,84 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 /// نتیجه‌ی بررسی آپدیت.
-/// - [upToDate]: کاربر آخرین نسخه را دارد.
-/// - [optional]: نسخه‌ی جدیدتر هست ولی اجباری نیست (می‌تواند «بعداً» بزند).
-/// - [force]: نسخه‌ی کاربر پایین‌تر از حداقل مجاز است → اجبار به آپدیت.
+/// - [upToDate]: کاربر آخرین نسخه را دارد (یا چک روی موبایل/بدون نسخه).
+/// - [optional]: نسخه‌ی جدیدتر هست ولی اجباری نیست.
+/// - [force]: نسخه‌ی کاربر پایین‌تر از min_version است.
 /// - [error]: اتصال برقرار نشد یا پاسخ معتبر نبود.
 enum UpdateCheckResult { upToDate, optional, force, error }
+
+final RegExp _semverPattern = RegExp(r'^\d+\.\d+\.\d+$');
 
 class UpdateService {
   UpdateService._();
   static final UpdateService instance = UpdateService._();
 
-  /// نسخه‌ی تزریق‌شده در build.
-  /// CI: `flutter build web --dart-define=APP_VERSION=$SEMVER`
-  /// Dev: `flutter run -d chrome --dart-define=APP_VERSION=1.0.4`
-  /// اگر در dev تزریق نکنی، خالی است و چک انجام نمی‌شود (بی‌خطر).
+  /// نسخه‌ی semver تزریق‌شده در build (CI از pubspec می‌خواند).
   static const String buildVersion =
       String.fromEnvironment('APP_VERSION', defaultValue: '');
-
-  // ───── state (پس از آخرین چک) ─────
 
   String? _localVersion;
   String? _latestVersion;
   String? _minVersion;
-  bool _isChecking = false;
+  Future<UpdateCheckResult>? _inFlight;
 
   String? get localVersion => _localVersion;
   String? get latestVersion => _latestVersion;
   String? get minVersion => _minVersion;
 
-  // ───── public API ─────
+  /// بررسی آپدیت. اگر چکی در جریان باشد، همان Future برگردانده می‌شود
+  /// (نه نتیجه‌ی ساختگی «به‌روز است»).
+  Future<UpdateCheckResult> checkNow() {
+    if (!kIsWeb) return Future.value(UpdateCheckResult.upToDate);
+    return _inFlight ??= _check().whenComplete(() => _inFlight = null);
+  }
 
-  /// بررسی آپدیت. تنها متد عمومی است.
-  /// روی موبایل همیشه [UpdateCheckResult.upToDate] برمی‌گرداند.
-  Future<UpdateCheckResult> checkNow() async {
-    if (!kIsWeb) return UpdateCheckResult.upToDate;
-    if (_isChecking) return UpdateCheckResult.upToDate;
-    _isChecking = true;
-
+  Future<UpdateCheckResult> _check() async {
     try {
-      // ۱) نسخه‌ی local را بگیر
-      // ۱) نسخه‌ی local را بگیر
       const local = buildVersion;
-      if (local.isEmpty) {
+      if (!_semverPattern.hasMatch(local)) {
         if (kDebugMode) {
           debugPrint(
-            '[UpdateService] APP_VERSION not set; skipping check. '
-            'Use --dart-define=APP_VERSION=x.y.z',
+            '[UpdateService] APP_VERSION not set or invalid; skipping check.',
           );
         }
         return UpdateCheckResult.upToDate;
       }
       _localVersion = local;
 
-      // ۲) پاسخ سرور را بگیر
       final data = await _fetchRemote();
       if (data == null) return UpdateCheckResult.error;
 
-      final latest = data['latest']?.toString();
-      final minVersion = data['min_version']?.toString();
-      if (latest == null || latest.isEmpty) {
+      final latest = (data['latest'] ?? '').toString();
+      final minRaw = (data['min_version'] ?? '').toString();
+      if (!_semverPattern.hasMatch(latest)) {
         if (kDebugMode) {
-          debugPrint('[UpdateService] response missing "latest" field');
+          debugPrint('[UpdateService] invalid or missing "latest"');
         }
         return UpdateCheckResult.error;
       }
 
       _latestVersion = latest;
-      _minVersion = minVersion;
+      // اگر min_version نامعتبر یا خالی باشد، اجباری وجود ندارد.
+      final min = _semverPattern.hasMatch(minRaw) ? minRaw : null;
+      _minVersion = min;
 
       if (kDebugMode) {
-        debugPrint(
-          '[UpdateService] local=$local latest=$latest min=$minVersion',
-        );
+        debugPrint('[UpdateService] local=$local latest=$latest min=$min');
       }
 
-      // ۳) تصمیم بر اساس min_version
-      final effectiveMin = (minVersion != null && minVersion.isNotEmpty)
-          ? minVersion
-          : latest; // اگر min_version نبود، پیش‌فرض «آخرین» است (یعنی هیچ‌وقت force نمی‌شود)
-
-      final cmpLatest = compareSemver(local, latest);
-      final cmpMin = compareSemver(local, effectiveMin);
-
-      if (cmpLatest >= 0) {
-        return UpdateCheckResult.upToDate;
-      }
-      if (cmpMin < 0) {
+      if (compareSemver(local, latest) >= 0) return UpdateCheckResult.upToDate;
+      if (min != null && compareSemver(local, min) < 0) {
         return UpdateCheckResult.force;
       }
       return UpdateCheckResult.optional;
     } catch (e) {
       if (kDebugMode) debugPrint('[UpdateService] error: $e');
       return UpdateCheckResult.error;
-    } finally {
-      _isChecking = false;
     }
   }
 
-  // ───── helpers ─────
-
   Future<Map<String, dynamic>?> _fetchRemote() async {
-    if (!kIsWeb) return null;
     try {
       final uri = Uri.parse(
         'app-version.json?t=${DateTime.now().millisecondsSinceEpoch}',
@@ -127,14 +104,10 @@ class UpdateService {
     }
   }
 
-  /// مقایسه‌ی SemVer عددی.
-  /// خروجی > 0 یعنی [a] جدیدتر از [b].
-  /// پشتیبانی: `x.y.z` و `x.y.z+build`. پیش‌نسخه‌ها (`-beta`) پشتیبانی نمی‌شوند.
+  /// مقایسه‌ی semver عددی. خروجی > 0 یعنی [a] جدیدتر است.
   static int compareSemver(String a, String b) {
-    List<int> parse(String v) {
-      final core = v.split('+').first;
-      return core.split('.').map((p) => int.tryParse(p) ?? 0).toList();
-    }
+    List<int> parse(String v) =>
+        v.split('+').first.split('.').map((p) => int.tryParse(p) ?? 0).toList();
 
     final pa = parse(a);
     final pb = parse(b);
