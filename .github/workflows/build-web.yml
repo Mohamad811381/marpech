@@ -38,7 +38,7 @@ jobs:
       - name: Flutter Pub Get
         run: flutter pub get
 
-           - name: Read version from pubspec
+      - name: Read version from pubspec
         id: ver
         run: |
           set -euo pipefail
