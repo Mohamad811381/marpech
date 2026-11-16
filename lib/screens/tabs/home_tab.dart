@@ -2,6 +2,7 @@
 
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:marpech/services/theme_service.dart';
 import '../../models/difficulty.dart';
 import '../../models/game_palette.dart';
 import '../../services/audio_service.dart';
@@ -130,17 +131,30 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
 
   Future<void> _cyclePalette() async {
     await _audio.playSfx(Sfx.button);
-    final unlocked = await ShopService.getUnlockedThemes();
-    final currentIdx = palettes.indexWhere((p) => p.id == widget.palette.id);
-    int next = currentIdx;
-    for (var i = 1; i <= palettes.length; i++) {
-      final idx = (currentIdx + i) % palettes.length;
-      if (unlocked.contains(palettes[idx].id)) {
-        next = idx;
-        break;
+    final isLight = ThemeService.isLight(context);
+
+    if (isLight) {
+      // چرخش بین پالت‌های روشن (همه‌ی پالت‌های روشن رایگان‌اند)
+      final currentId = ThemeService.lightPaletteId.value;
+      final currentIdx = lightPalettes.indexWhere((p) => p.id == currentId);
+      final next = lightPalettes[(currentIdx + 1) % lightPalettes.length];
+      await ThemeService.setLightPalette(next);
+    } else {
+      // چرخش بین پالت‌های تاریک باز شده
+      final unlocked = await ShopService.getUnlockedThemes();
+      final currentId = ThemeService.darkPalette.value.id;
+      final currentIdx = palettes.indexWhere((p) => p.id == currentId);
+      var nextIdx = currentIdx;
+      for (var i = 1; i <= palettes.length; i++) {
+        final idx = (currentIdx + i) % palettes.length;
+        if (unlocked.contains(palettes[idx].id)) {
+          nextIdx = idx;
+          break;
+        }
       }
+      await ThemeService.setDarkPalette(palettes[nextIdx]);
     }
-    await StorageService.setPaletteIndex(next);
+
     widget.onPaletteChanged();
     if (mounted) setState(() {});
   }

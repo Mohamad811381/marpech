@@ -300,29 +300,70 @@ const marpechLegendPalette = GamePalette(
   onPrimary: Color(0xFF0A0014),
 );
 
+// ☀️ پالت‌های روشن (جدا از پالت‌های تاریک)
 
+// ☀️ پالت‌های روشن (جدا از پالت‌های تاریک)
 
-
-// ☀️ روشن (تم مستقل، جدا از پالت‌های تاریک)
-const lightPalette = GamePalette(
-  id: 'light',
-  bg: Color(0xFFF5F7FA),
+// 🌿 Mint: سفید مایل به خاکستری با آکسنت نعنایی
+const lightMintPalette = GamePalette(
+  id: 'light_mint',
+  bg: Color(0xFFF4F7F6),
   surface: Color(0xFFFFFFFF),
-  surfaceAlt: Color(0xFFEEF2F6),
-  border: Color(0xFFD0D8E2),
-  grid: Color(0xFFE3E9F0),
-  board: Color(0xFFE9EEF4),
-  snakeHead: Color(0xFF0E8C6E),
-  snakeTail: Color(0xFF4FC3A1),
-  food: Color(0xFFFF4D6D),
-  accent: Color(0xFF00A884),
-  textMuted: Color(0xFF6B7A8F),
-  textPrimary: Color(0xFF0F1720),
+  surfaceAlt: Color(0xFFE9F2EF),
+  border: Color(0xFF9FC2B6),
+  grid: Color(0xFFC5DDD5),
+  board: Color(0xFFCFE6DE),
+  snakeHead: Color(0xFF0A7D60),
+  snakeTail: Color(0xFF3DB996),
+  food: Color(0xFFE63956),
+  accent: Color(0xFF0E9F7A),
+  textMuted: Color(0xFF5E7068),
+  textPrimary: Color(0xFF13201C),
   onPrimary: Color(0xFFFFFFFF),
 );
 
+// 🍊 Cream: کرم ملایم با آکسنت نارنجی گرم
+const lightCreamPalette = GamePalette(
+  id: 'light_cream',
+  bg: Color(0xFFFBF6EC),
+  surface: Color(0xFFFFFDF8),
+  surfaceAlt: Color(0xFFF5EBD9),
+  border: Color(0xFFA9864E),
+  grid: Color(0xFFC4A46E),
+  board: Color(0xFFD4B88A),
+  snakeHead: Color(0xFFD9611A),
+  snakeTail: Color(0xFFB8500F),
+  food: Color(0xFFC62828),
+  accent: Color(0xFFD9611A),
+  textMuted: Color(0xFF7A6650),
+  textPrimary: Color(0xFF2B2016),
+  onPrimary: Color(0xFFFFFFFF),
+);
 
+// 🩵 Slate: خاکستری روشن با آکسنت آبی
+const lightSlatePalette = GamePalette(
+  id: 'light_slate',
+  bg: Color(0xFFEEF1F5),
+  surface: Color(0xFFFFFFFF),
+  surfaceAlt: Color(0xFFE3E8EF),
+  border: Color(0xFF8D9CB0),
+  grid: Color(0xFFBFCAD8),
+  board: Color(0xFFCBD5E1),
+  snakeHead: Color(0xFF1D4ED8),
+  snakeTail: Color(0xFF5B8DE0),
+  food: Color(0xFFE11D48),
+  accent: Color(0xFF2563EB),
+  textMuted: Color(0xFF55657A),
+  textPrimary: Color(0xFF0F172A),
+  onPrimary: Color(0xFFFFFFFF),
+);
 
+/// لیست پالت‌های روشن (پیش‌فرض: اولی)
+const lightPalettes = [
+  lightMintPalette,
+  lightCreamPalette,
+  lightSlatePalette,
+];
 
 const palettes = [
   neonPalette,
@@ -339,6 +380,6 @@ const palettes = [
   portalsPalette,
   timePalette,
   // ── Stage 3: به انتها اضافه شده — index حفظ می‌شود ──
-  championPalette,        // index 13
-  marpechLegendPalette,   // index 14
+  championPalette, // index 13
+  marpechLegendPalette, // index 14
 ];

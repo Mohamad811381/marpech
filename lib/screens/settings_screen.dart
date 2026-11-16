@@ -75,6 +75,7 @@ class _SettingsScreenState extends State<SettingsScreen>
     super.initState();
     _settings = SettingsService.current;
     _currentPalette = widget.palette;
+    ThemeService.lightPaletteId.addListener(_onThemeChanged);
     ThemeService.mode.addListener(_onThemeChanged);
     ThemeService.darkPalette.addListener(_onThemeChanged);
     _boardPulse = AnimationController(
@@ -90,6 +91,7 @@ class _SettingsScreenState extends State<SettingsScreen>
     _boardPulse.dispose();
     ThemeService.mode.removeListener(_onThemeChanged);
     ThemeService.darkPalette.removeListener(_onThemeChanged);
+    ThemeService.lightPaletteId.removeListener(_onThemeChanged);
     super.dispose();
   }
 
@@ -112,6 +114,34 @@ class _SettingsScreenState extends State<SettingsScreen>
       _coins = coins;
       _playerXp = xp;
     });
+  }
+
+  Widget _lightPaletteRow() {
+    return Wrap(
+      alignment: WrapAlignment.center,
+      spacing: 8,
+      runSpacing: 8,
+      children: lightPalettes.map((pal) {
+        final selected = pal.id == ThemeService.lightPaletteId.value;
+        return _cosmeticChip(
+          label: pal.name,
+          owned: true,
+          selected: selected,
+          leading: Container(
+            width: 14,
+            height: 14,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(colors: [pal.snakeHead, pal.snakeTail]),
+              shape: BoxShape.circle,
+            ),
+          ),
+          onTap: () async {
+            await _audio.playSfx(Sfx.button);
+            await ThemeService.setLightPalette(pal);
+          },
+        );
+      }).toList(),
+    );
   }
 
   Future<void> _loadShop() async {
@@ -206,7 +236,10 @@ class _SettingsScreenState extends State<SettingsScreen>
                       children: [
                         _themeModeRow(),
                         const SizedBox(height: 14),
-                        _themeRow(),
+                        if (ThemeService.isLight(context))
+                          _lightPaletteRow()
+                        else
+                          _themeRow(),
                       ],
                     ),
                   ),

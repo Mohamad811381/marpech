@@ -3,7 +3,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'models/game_palette.dart';
 import 'screens/main_shell.dart';
 import 'services/localization_service.dart';
 import 'services/theme_service.dart';
@@ -85,13 +84,17 @@ class _MarpechAppState extends State<MarpechApp> {
         LocalizationService.instance,
         ThemeService.mode,
         ThemeService.darkPalette,
+        ThemeService.lightPaletteId,
       ]),
       builder: (context, _) {
         return MaterialApp(
           title: L10n.t('app_name'),
           debugShowCheckedModeBanner: false,
           navigatorKey: _navigatorKey,
-          theme: ThemeService.buildTheme(lightPalette, Brightness.light),
+          theme: ThemeService.buildTheme(
+            ThemeService.lightPaletteById(ThemeService.lightPaletteId.value),
+            Brightness.light,
+          ),
           darkTheme: ThemeService.buildTheme(
             ThemeService.darkPalette.value,
             Brightness.dark,
