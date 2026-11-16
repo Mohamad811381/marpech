@@ -19,94 +19,9 @@ Future<void> showUpdateDialog(
     useRootNavigator: true,
     builder: (dialogCtx) => PopScope(
       canPop: showCancel,
-      child: Dialog(
-        backgroundColor: neonPalette.surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-          side: BorderSide(
-            color: neonPalette.accent.withOpacity(0.4),
-            width: 1.5,
-          ),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _GlowIcon(
-                icon: Icons.rocket_launch_rounded,
-                color: neonPalette.accent,
-              ),
-              const SizedBox(height: 22),
-              Text(
-                showCancel ? 'نسخه جدید آماده است' : 'به‌روزرسانی الزامی',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w900,
-                  color: neonPalette.textPrimary,
-                  letterSpacing: 0.5,
-                ),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                version != null
-                    ? (showCancel
-                        ? 'نسخه‌ی $version با بهبودهای جدید در دسترس است.'
-                        : 'نسخه‌ی $version با تغییرات مهم منتشر شده است.\nبرای ادامه، لطفاً به‌روزرسانی کنید.')
-                    : 'نسخه جدید در دسترس است.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 13.5,
-                  height: 1.7,
-                  color: neonPalette.textMuted,
-                ),
-              ),
-              const SizedBox(height: 26),
-              if (showCancel)
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextButton(
-                        onPressed: () => Navigator.of(dialogCtx).pop(),
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                        ),
-                        child: Text(
-                          'بعداً',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: neonPalette.textMuted,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      flex: 2,
-                      child: _PrimaryButton(
-                        label: 'به‌روزرسانی',
-                        onPressed: () async {
-await reloadWebApp(version);                        },
-                      ),
-                    ),
-                  ],
-                )
-              else
-                SizedBox(
-                  width: double.infinity,
-                  child: _PrimaryButton(
-                    label: 'به‌روزرسانی',
-                    onPressed: () async {
-await reloadWebApp(version);                    },
-                  ),
-                ),
-            ],
-          ),
-        ),
+      child: _UpdateDialog(
+        showCancel: showCancel,
+        version: version,
       ),
     ),
   );
@@ -126,7 +41,131 @@ Future<void> showUpToDateDialog(
   );
 }
 
-// ────────── اجزای داخلی ──────────
+// ────────── دیالوگ آپدیت (stateful برای حالت در حال بارگذاری) ──────────
+
+class _UpdateDialog extends StatefulWidget {
+  final bool showCancel;
+  final String? version;
+  const _UpdateDialog({required this.showCancel, this.version});
+
+  @override
+  State<_UpdateDialog> createState() => _UpdateDialogState();
+}
+
+class _UpdateDialogState extends State<_UpdateDialog> {
+  bool _busy = false;
+
+  Future<void> _onUpdate() async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      await reloadWebApp(widget.version);
+      // در وب صفحه جایگزین می‌شود و این خط دیگر اجرا نمی‌شود.
+    } catch (_) {
+      // اگر باز کردن آدرس شکست خورد، کاربر دوباره می‌تواند تلاش کند.
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final showCancel = widget.showCancel;
+    final version = widget.version;
+
+    return Dialog(
+      backgroundColor: neonPalette.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(24),
+        side: BorderSide(
+          color: neonPalette.accent.withOpacity(0.4),
+          width: 1.5,
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _GlowIcon(
+              icon: Icons.rocket_launch_rounded,
+              color: neonPalette.accent,
+            ),
+            const SizedBox(height: 22),
+            Text(
+              showCancel ? 'نسخه جدید آماده است' : 'به‌روزرسانی الزامی',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w900,
+                color: neonPalette.textPrimary,
+                letterSpacing: 0.5,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              version != null
+                  ? (showCancel
+                      ? 'نسخه‌ی $version با بهبودهای جدید در دسترس است.'
+                      : 'نسخه‌ی $version با تغییرات مهم منتشر شده است.\nبرای ادامه، لطفاً به‌روزرسانی کنید.')
+                  : 'نسخه جدید در دسترس است.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 13.5,
+                height: 1.7,
+                color: neonPalette.textMuted,
+              ),
+            ),
+            const SizedBox(height: 26),
+            if (showCancel)
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed:
+                          _busy ? null : () => Navigator.of(context).pop(),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      child: Text(
+                        'بعداً',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: neonPalette.textMuted,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    flex: 2,
+                    child: _PrimaryButton(
+                      label: 'به‌روزرسانی',
+                      busy: _busy,
+                      onPressed: _busy ? null : _onUpdate,
+                    ),
+                  ),
+                ],
+              )
+            else
+              SizedBox(
+                width: double.infinity,
+                child: _PrimaryButton(
+                  label: 'به‌روزرسانی',
+                  busy: _busy,
+                  onPressed: _busy ? null : _onUpdate,
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ────────── دیالوگ «به‌روز است» ──────────
 
 class _UpToDateDialog extends StatefulWidget {
   final String? version;
@@ -223,6 +262,8 @@ class _UpToDateDialogState extends State<_UpToDateDialog> {
   }
 }
 
+// ────────── اجزای مشترک ──────────
+
 class _GlowIcon extends StatelessWidget {
   final IconData icon;
   final Color color;
@@ -255,8 +296,13 @@ class _GlowIcon extends StatelessWidget {
 
 class _PrimaryButton extends StatelessWidget {
   final String label;
-  final VoidCallback onPressed;
-  const _PrimaryButton({required this.label, required this.onPressed});
+  final bool busy;
+  final VoidCallback? onPressed;
+  const _PrimaryButton({
+    required this.label,
+    required this.busy,
+    required this.onPressed,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -265,20 +311,31 @@ class _PrimaryButton extends StatelessWidget {
       style: ElevatedButton.styleFrom(
         backgroundColor: neonPalette.accent,
         foregroundColor: Colors.white,
+        disabledBackgroundColor: neonPalette.accent.withOpacity(0.6),
+        disabledForegroundColor: Colors.white70,
         elevation: 0,
         padding: const EdgeInsets.symmetric(vertical: 16),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(14),
         ),
       ),
-      child: Text(
-        label,
-        style: const TextStyle(
-          fontSize: 15,
-          fontWeight: FontWeight.w900,
-          letterSpacing: 0.5,
-        ),
-      ),
+      child: busy
+          ? const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.2,
+                color: Colors.white,
+              ),
+            )
+          : Text(
+              label,
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0.5,
+              ),
+            ),
     );
   }
 }

@@ -46,7 +46,7 @@ class _AppDrawerState extends State<AppDrawer> {
   }
 
   Future<void> _autoCheck() async {
-    if (!mounted || _checking) return;
+    if (!mounted) return;
     setState(() => _checking = true);
     try {
       final result = await UpdateService.instance.checkNow();
@@ -299,8 +299,6 @@ class _AppDrawerState extends State<AppDrawer> {
   // ─────────────── بررسی دستی ───────────────
 
   Future<void> _checkForUpdate(BuildContext context) async {
-    if (_checking) return;
-
     if (!kIsWeb) {
       final messenger = ScaffoldMessenger.of(context);
       Navigator.of(context).pop();
@@ -335,6 +333,8 @@ class _AppDrawerState extends State<AppDrawer> {
       builder: (_) => _LoadingDialog(palette: p),
     );
 
+    // اگر چک خودکار در جریان باشد، checkNow همان Future را برمی‌گرداند
+    // و کاربر منتظر نتیجه‌ی واقعی می‌ماند (نه پاسخ ساختگی «به‌روز است»).
     final result = await UpdateService.instance.checkNow();
 
     if (!navCtx.mounted) return;
