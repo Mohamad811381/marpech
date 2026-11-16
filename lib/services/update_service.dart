@@ -21,6 +21,10 @@ class UpdateService {
   static const String buildVersion =
       String.fromEnvironment('APP_VERSION', defaultValue: '');
 
+  /// شماره‌ی build (بخش بعد از +) که از pubspec می‌آید.
+  static const String buildNumber =
+      String.fromEnvironment('APP_BUILD', defaultValue: '');
+
   String? _localVersion;
   String? _latestVersion;
   String? _minVersion;

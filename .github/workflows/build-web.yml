@@ -38,7 +38,7 @@ jobs:
       - name: Flutter Pub Get
         run: flutter pub get
 
-      - name: Read semver from pubspec
+           - name: Read version from pubspec
         id: ver
         run: |
           set -euo pipefail
@@ -48,12 +48,18 @@ jobs:
             exit 1
           fi
           SEMVER="${VERSION%%+*}"
+          if [[ "$VERSION" == *"+"* ]]; then
+            BUILD="${VERSION#*+}"
+          else
+            BUILD="0"
+          fi
           if [[ ! "$SEMVER" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "::error::semver نامعتبر: $SEMVER"
             exit 1
           fi
-          echo "raw=$VERSION semver=$SEMVER"
+          echo "raw=$VERSION semver=$SEMVER build=$BUILD"
           echo "semver=$SEMVER" >> "$GITHUB_OUTPUT"
+          echo "build=$BUILD" >> "$GITHUB_OUTPUT"
 
       - name: Validate MIN_VERSION
         env:
@@ -71,13 +77,13 @@ jobs:
             exit 1
           fi
 
-      - name: Build Web (Release)
+          - name: Build Web (Release)
         run: |
           flutter build web \
             --release \
             --base-href /marpech/ \
-            --dart-define=APP_VERSION=${{ steps.ver.outputs.semver }}
-
+            --dart-define=APP_VERSION=${{ steps.ver.outputs.semver }} \
+            --dart-define=APP_BUILD=${{ steps.ver.outputs.build }}
       - name: Cache-bust entry files
         run: |
           set -euo pipefail

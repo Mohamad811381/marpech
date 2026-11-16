@@ -728,6 +728,32 @@ const Map<String, Map<String, String>> translations = {
         'گیر افتادی! با پرداخت {n} سکه می‌تونی بازی رو ادامه بدی.',
     'emergency_rescue_button': 'نجات با {n} سکه',
     'emergency_rescue_decline': 'پایان بازی',
+
+    // ---------- آپدیت ----------
+    'update_check_menu': 'بررسی به‌روزرسانی',
+    'update_badge_store': 'استور',
+    'update_badge_new': 'جدید',
+    'update_badge_forced': 'اجباری v{version}',
+    'update_badge_forced_plain': 'اجباری',
+    'update_badge_uptodate': 'به‌روز',
+    'update_badge_unknown': 'نامشخص',
+    'update_store_only': 'به‌روزرسانی از طریق استور انجام می‌شود',
+    'update_checking': 'در حال بررسی...',
+    'update_no_connection': 'اتصال برقرار نشد',
+    'update_ready_title': 'نسخه جدید آماده است',
+    'update_required_title': 'به‌روزرسانی الزامی',
+    'update_optional_body': 'نسخه‌ی {version} با بهبودهای جدید در دسترس است.',
+    'update_required_body':
+        'نسخه‌ی {version} با تغییرات مهم منتشر شده است.\nبرای ادامه، لطفاً به‌روزرسانی کنید.',
+    'update_new_available': 'نسخه جدید در دسترس است.',
+    'update_later': 'بعداً',
+    'update_now': 'به‌روزرسانی',
+    'update_uptodate_title': 'نسخه شما به‌روز است',
+    'update_uptodate_body': 'شما از آخرین نسخه ({version}) استفاده می‌کنید.',
+    'update_uptodate_body_plain': 'شما از آخرین نسخه استفاده می‌کنید.',
+    'update_ok': 'باشه',
+    'version_unknown': '?',
+    'version_loading': 'v...',
   },
   'en': {
     // ---------- Common ----------
@@ -1455,13 +1481,32 @@ const Map<String, Map<String, String>> translations = {
     'emergency_rescue_desc': 'You are stuck! Pay {n} coins to continue.',
     'emergency_rescue_button': 'Rescue for {n} coins',
     'emergency_rescue_decline': 'End Game',
+
+    // ---------- Update ----------
+    'update_check_menu': 'Check for updates',
+    'update_badge_store': 'Store',
+    'update_badge_new': 'New',
+    'update_badge_forced': 'Required v{version}',
+    'update_badge_forced_plain': 'Required',
+    'update_badge_uptodate': 'Up to date',
+    'update_badge_unknown': 'Unknown',
+    'update_store_only': 'Updates are delivered through the app store',
+    'update_checking': 'Checking...',
+    'update_no_connection': 'No connection',
+    'update_ready_title': 'New version is ready',
+    'update_required_title': 'Update required',
+    'update_optional_body':
+        'Version {version} with new improvements is available.',
+    'update_required_body':
+        'Version {version} has important changes.\nPlease update to continue.',
+    'update_new_available': 'A new version is available.',
+    'update_later': 'Later',
+    'update_now': 'Update',
+    'update_uptodate_title': 'You are up to date',
+    'update_uptodate_body': 'You are using the latest version ({version}).',
+    'update_uptodate_body_plain': 'You are using the latest version.',
+    'update_ok': 'OK',
+    'version_unknown': '?',
+    'version_loading': 'v...',
   },
 };
-
-/// جایگزینی سریع placeholderها: tr('key', {'n': 5})
-String trf(String key, Map<String, dynamic> vars) {
-  var s = translations['fa']?[key] ?? key;
-  // Actually use LocalizationService to pick language
-  // This function is a fallback if L10n not initialized
-  return s;
-}

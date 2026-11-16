@@ -90,7 +90,7 @@ class _AppDrawerState extends State<AppDrawer> {
             _item(
               context,
               icon: Icons.system_update_alt_rounded,
-              title: 'بررسی به‌روزرسانی',
+              title: L10n.t('update_check_menu'),
               trailingWidget: _updateBadge(),
               onTap: () => _checkForUpdate(context),
             ),
@@ -129,10 +129,13 @@ class _AppDrawerState extends State<AppDrawer> {
   }
 
   // ─────────────── بج وضعیت آپدیت ───────────────
-
   Widget _updateBadge() {
     if (!kIsWeb) {
-      return _Badge(text: 'استور', color: p.textMuted, bgColor: p.surfaceAlt);
+      return _Badge(
+        text: L10n.t('update_badge_store'),
+        color: p.textMuted,
+        bgColor: p.surfaceAlt,
+      );
     }
     if (_checking) {
       return SizedBox(
@@ -144,32 +147,35 @@ class _AppDrawerState extends State<AppDrawer> {
     switch (_lastResult) {
       case UpdateCheckResult.optional:
         return _Badge(
-          text: _latestVersion != null ? 'v$_latestVersion' : 'جدید',
+          text: _latestVersion != null
+              ? 'v$_latestVersion'
+              : L10n.t('update_badge_new'),
           color: Colors.white,
           bgColor: p.accent,
         );
       case UpdateCheckResult.force:
         return _Badge(
-          text: _latestVersion != null ? 'اجباری v$_latestVersion' : 'اجباری',
+          text: _latestVersion != null
+              ? L10n.tf('update_badge_forced', {'version': _latestVersion})
+              : L10n.t('update_badge_forced_plain'),
           color: Colors.white,
-          bgColor: p.food, // رنگ هشدار
+          bgColor: p.food,
         );
       case UpdateCheckResult.upToDate:
         return _Badge(
-          text: 'به‌روز',
+          text: L10n.t('update_badge_uptodate'),
           color: Colors.white,
           bgColor: Colors.green.shade600,
         );
       case UpdateCheckResult.error:
       case null:
         return _Badge(
-          text: 'نامشخص',
+          text: L10n.t('update_badge_unknown'),
           color: p.textMuted,
           bgColor: p.surfaceAlt,
         );
     }
   }
-
   // ─────────────── header / item / footer ───────────────
 
   Widget _header(BuildContext context) {
@@ -305,7 +311,7 @@ class _AppDrawerState extends State<AppDrawer> {
       messenger.showSnackBar(
         SnackBar(
           behavior: SnackBarBehavior.floating,
-          content: const Text('به‌روزرسانی از طریق استور انجام می‌شود'),
+          content: Text(L10n.t('update_store_only')),
           duration: const Duration(seconds: 3),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -374,14 +380,15 @@ class _AppDrawerState extends State<AppDrawer> {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
-            content: const Row(
+            content: Row(
               children: [
-                Icon(Icons.wifi_off_rounded, color: Colors.white, size: 18),
-                SizedBox(width: 10),
+                const Icon(Icons.wifi_off_rounded,
+                    color: Colors.white, size: 18),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'اتصال برقرار نشد',
-                    style: TextStyle(
+                    L10n.t('update_no_connection'),
+                    style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w700,
                     ),
@@ -458,7 +465,7 @@ class _LoadingDialog extends StatelessWidget {
             ),
             const SizedBox(width: 16),
             Text(
-              'در حال بررسی...',
+              L10n.t('update_checking'),
               style: TextStyle(
                 color: palette.textPrimary,
                 fontSize: 14,
@@ -473,7 +480,6 @@ class _LoadingDialog extends StatelessWidget {
 }
 
 // ─────────────── ویجت نسخه ───────────────
-
 class _VersionText extends StatefulWidget {
   final TextStyle? style;
   const _VersionText({this.style});
@@ -483,23 +489,29 @@ class _VersionText extends StatefulWidget {
 }
 
 class _VersionTextState extends State<_VersionText> {
-  String _version = 'v...';
+  late String _version;
 
   @override
   void initState() {
     super.initState();
+    _version = L10n.t('version_loading');
     _load();
   }
 
   Future<void> _load() async {
-    // ۱) نسخه‌ی تزریق‌شده در build (مسیر اصلی)
+    // ۱) نسخه‌ی تزریق‌شده در build (CI و دیباگ با dart-define)
     if (UpdateService.buildVersion.isNotEmpty) {
+      const b = UpdateService.buildNumber;
       if (!mounted) return;
-      setState(() => _version = 'v${UpdateService.buildVersion}');
+      setState(() {
+        _version = b.isNotEmpty
+            ? 'v${UpdateService.buildVersion}+$b'
+            : 'v${UpdateService.buildVersion}';
+      });
       return;
     }
 
-    // ۲) PackageInfo — فقط برای نمایش (نه برای چک آپدیت)
+    // ۲) PackageInfo — فقط وقتی dart-define نباشد
     try {
       final info = await PackageInfo.fromPlatform();
       if (!mounted) return;
@@ -513,9 +525,9 @@ class _VersionTextState extends State<_VersionText> {
       }
     } catch (_) {}
 
-    // ۳) اگر هیچ‌کدام نبود (dev روی وب بدون dart-define)
+    // ۳) هیچ‌کدام نبود
     if (!mounted) return;
-    setState(() => _version = 'v?');
+    setState(() => _version = L10n.t('version_unknown'));
   }
 
   @override

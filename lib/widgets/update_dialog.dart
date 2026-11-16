@@ -2,6 +2,7 @@
 
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:marpech/services/localization_service.dart';
 import '../models/game_palette.dart';
 import '../utils/web_reload.dart';
 
@@ -92,7 +93,9 @@ class _UpdateDialogState extends State<_UpdateDialog> {
             ),
             const SizedBox(height: 22),
             Text(
-              showCancel ? 'نسخه جدید آماده است' : 'به‌روزرسانی الزامی',
+              showCancel
+                  ? L10n.t('update_ready_title')
+                  : L10n.t('update_required_title'),
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w900,
@@ -104,9 +107,9 @@ class _UpdateDialogState extends State<_UpdateDialog> {
             Text(
               version != null
                   ? (showCancel
-                      ? 'نسخه‌ی $version با بهبودهای جدید در دسترس است.'
-                      : 'نسخه‌ی $version با تغییرات مهم منتشر شده است.\nبرای ادامه، لطفاً به‌روزرسانی کنید.')
-                  : 'نسخه جدید در دسترس است.',
+                      ? L10n.tf('update_optional_body', {'version': version})
+                      : L10n.tf('update_required_body', {'version': version}))
+                  : L10n.t('update_new_available'),
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 13.5,
@@ -129,7 +132,7 @@ class _UpdateDialogState extends State<_UpdateDialog> {
                         ),
                       ),
                       child: Text(
-                        'بعداً',
+                        L10n.t('update_later'),
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
@@ -142,7 +145,7 @@ class _UpdateDialogState extends State<_UpdateDialog> {
                   Expanded(
                     flex: 2,
                     child: _PrimaryButton(
-                      label: 'به‌روزرسانی',
+                      label: L10n.t('update_now'),
                       busy: _busy,
                       onPressed: _busy ? null : _onUpdate,
                     ),
@@ -153,7 +156,7 @@ class _UpdateDialogState extends State<_UpdateDialog> {
               SizedBox(
                 width: double.infinity,
                 child: _PrimaryButton(
-                  label: 'به‌روزرسانی',
+                  label: L10n.t('update_now'),
                   busy: _busy,
                   onPressed: _busy ? null : _onUpdate,
                 ),
@@ -214,7 +217,7 @@ class _UpToDateDialogState extends State<_UpToDateDialog> {
             ),
             const SizedBox(height: 22),
             Text(
-              'نسخه شما به‌روز است',
+              L10n.t('update_uptodate_title'),
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w900,
@@ -225,8 +228,8 @@ class _UpToDateDialogState extends State<_UpToDateDialog> {
             const SizedBox(height: 10),
             Text(
               widget.version != null
-                  ? 'شما از آخرین نسخه (${widget.version}) استفاده می‌کنید.'
-                  : 'شما از آخرین نسخه استفاده می‌کنید.',
+                  ? L10n.tf('update_uptodate_body', {'version': widget.version})
+                  : L10n.t('update_uptodate_body_plain'),
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 13.5,
@@ -246,7 +249,7 @@ class _UpToDateDialogState extends State<_UpToDateDialog> {
                   ),
                 ),
                 child: Text(
-                  'باشه',
+                  L10n.t('update_ok'),
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,

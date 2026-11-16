@@ -1,6 +1,7 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
+import 'package:marpech/services/update_service.dart';
 import '../models/game_palette.dart';
 import '../services/localization_service.dart';
 import '../services/levels_service.dart';
@@ -187,7 +188,8 @@ class _AboutScreenState extends State<AboutScreen> {
                 Icon(Icons.local_offer_rounded, size: 12, color: p.textMuted),
                 const SizedBox(width: 6),
                 Text(
-                  '${L10n.t('about_version')} 1.0.0',
+                  '${L10n.t('about_version')} ${_versionNumber()}',
+                  textDirection: TextDirection.ltr,
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
@@ -200,6 +202,13 @@ class _AboutScreenState extends State<AboutScreen> {
         ],
       ),
     );
+  }
+
+  String _versionNumber() {
+    const v = UpdateService.buildVersion;
+    const b = UpdateService.buildNumber;
+    if (v.isEmpty) return '?';
+    return b.isNotEmpty ? 'v$v+$b' : 'v$v';
   }
 
   // ---------- کارت آمار بازیکن ----------
