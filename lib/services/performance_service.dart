@@ -38,21 +38,21 @@ class PerformanceService {
 
   /// کیفیت مؤثر — خودکار بر اساس پلتفرم
   static EffectiveQuality get effective {
-    if (_quality == GraphicsQuality.low) return EffectiveQuality.low;
-    if (_quality == GraphicsQuality.medium) return EffectiveQuality.medium;
-    if (_quality == GraphicsQuality.high) {
-      // اگه iOS هست، high هم قابل قبول نیست → medium
-      if (PlatformDetector.isIOS) return EffectiveQuality.medium;
-      return EffectiveQuality.high;
+    switch (_quality) {
+      case GraphicsQuality.low:
+        return EffectiveQuality.low;
+      case GraphicsQuality.medium:
+        return EffectiveQuality.medium;
+      case GraphicsQuality.high:
+        return EffectiveQuality.high;
+      case GraphicsQuality.auto:
+        break;
     }
-    // auto:
-    if (PlatformDetector.isIOS) return EffectiveQuality.low;
-    if (PlatformDetector.isAndroid) {
-      return PlatformDetector.cores >= 4
-          ? EffectiveQuality.high
-          : EffectiveQuality.medium;
-    }
-    // ویندوز/مک
+
+    // auto: iOS هم medium می‌گیرد تا الگوها دیده شوند
+    if (PlatformDetector.isIOS) return EffectiveQuality.medium;
+
+    // اندروید، ویندوز، مک
     return PlatformDetector.cores >= 4
         ? EffectiveQuality.high
         : EffectiveQuality.medium;
@@ -90,8 +90,8 @@ class PerformanceService {
   /// هاله‌های اضافی (مثل هاله‌ی سر مار، نبض غذا)
   static bool get glowEnabled => effective != EffectiveQuality.low;
 
-  /// پترن‌های پیچیده (کهکشان، مارپیچ، موج، کریستال، گلبرگ)
-  static bool get complexPatternsEnabled => effective == EffectiveQuality.high;
+  /// پترن‌های پیچیده (کهکشان، مارپیچ، موج، کریستال، گلبرگ) — از medium به بالا فعال
+  static bool get complexPatternsEnabled => effective != EffectiveQuality.low;
 
   /// رد مار با ذرات (نه فقط خط ساده)
   static bool get fancyTrailEnabled => effective == EffectiveQuality.high;
