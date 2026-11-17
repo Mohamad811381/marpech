@@ -10,6 +10,7 @@ import 'services/performance_service.dart';
 import 'services/player_progression_service.dart';
 import 'services/settings_service.dart';
 import 'services/theme_service.dart';
+import 'services/app_haptics.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -38,6 +39,8 @@ void main() async {
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
   ]);
+
+  await AppHaptics.init();
 
   runApp(const MarpechApp());
 }

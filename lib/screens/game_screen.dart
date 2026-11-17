@@ -39,6 +39,7 @@ import '../services/player_progression_service.dart';
 import 'game/game_hud.dart';
 import 'game/game_overlays.dart';
 import 'game/game_shake_wrapper.dart';
+import '../services/app_haptics.dart';
 
 /// 🐢 ضریب سرعت مخصوص مراحل — 1.0 = عادی، 2.0 = دو برابر کندتر
 const double kLevelSpeedMultiplier = 1;
@@ -564,8 +565,8 @@ class _GameScreenState extends State<GameScreen>
           _beginPlay();
         }
       });
-      if (SettingsService.current.haptics && _countdown > 0) {
-        HapticFeedback.selectionClick().catchError((_) {});
+      if (_countdown > 0) {
+        AppHaptics.selection();
       }
       if (SettingsService.current.sfx && _countdown > 0) {
         _audio.playSfx(Sfx.button);
@@ -576,9 +577,7 @@ class _GameScreenState extends State<GameScreen>
   void _triggerPortalBurst(math.Point<int> from, math.Point<int> to) {
     _audio.playSfx(Sfx.newRecord);
     if (PerformanceService.particleCount == 0) return;
-    if (SettingsService.current.haptics) {
-      HapticFeedback.selectionClick().catchError((_) {});
-    }
+    AppHaptics.selection();
     if (!SettingsService.current.particles) return;
 
     Color portalColor = const Color(0xFF00E5FF);
@@ -826,9 +825,7 @@ class _GameScreenState extends State<GameScreen>
     _spawnFood();
     _updateSpeed();
     _audio.playSfx(Sfx.eat);
-    if (SettingsService.current.haptics) {
-      HapticFeedback.lightImpact().catchError((_) {});
-    }
+    AppHaptics.light();
 
     _checkComboActivation();
   }
@@ -839,9 +836,7 @@ class _GameScreenState extends State<GameScreen>
       _combosThisGame++;
       _comboFlash.forward(from: 0);
       _audio.playSfx(Sfx.newRecord);
-      if (SettingsService.current.haptics) {
-        HapticFeedback.mediumImpact().catchError((_) {});
-      }
+      AppHaptics.medium();
     }
     _wasComboActive = isCombo;
   }
@@ -856,9 +851,7 @@ class _GameScreenState extends State<GameScreen>
     _slowTickTimer?.cancel();
     _countdownTimer?.cancel();
     _audio.playSfx(Sfx.newRecord);
-    if (SettingsService.current.haptics) {
-      HapticFeedback.heavyImpact().catchError((_) {});
-    }
+    AppHaptics.heavy();
     await StorageService.resetPity(widget.level!.id);
     if (!_everHadShield && !_everHadSlow) {
       await StorageService.incrementPerfectLevels();
@@ -991,9 +984,7 @@ class _GameScreenState extends State<GameScreen>
       _countdownTimer?.cancel();
       _triggerShake(intensity: 1.0);
       _audio.playSfx(Sfx.gameOver);
-      if (SettingsService.current.haptics) {
-        HapticFeedback.heavyImpact().catchError((_) {});
-      }
+      AppHaptics.heavy();
       _finalizeGameOver();
       return;
     }
@@ -1030,9 +1021,7 @@ class _GameScreenState extends State<GameScreen>
 
   void _handleEmergencyDecline() {
     if (!mounted) return;
-    if (SettingsService.current.haptics) {
-      HapticFeedback.selectionClick().catchError((_) {});
-    }
+    AppHaptics.selection();
     _audio.playSfx(Sfx.button);
     setState(() => _isShowingEmergencyDialog = false);
     _gameOver();
@@ -1097,9 +1086,7 @@ class _GameScreenState extends State<GameScreen>
     // Feedback
     _audio.playSfx(Sfx.newRecord);
     _triggerShake(intensity: 1.0);
-    if (SettingsService.current.haptics) {
-      HapticFeedback.heavyImpact().catchError((_) {});
-    }
+    AppHaptics.heavy();
 
     if (SettingsService.current.particles &&
         PerformanceService.particleCount > 0) {
@@ -1162,9 +1149,7 @@ class _GameScreenState extends State<GameScreen>
 
     _audio.playSfx(Sfx.newRecord);
     _triggerShake(intensity: 0.55);
-    if (SettingsService.current.haptics) {
-      HapticFeedback.mediumImpact().catchError((_) {});
-    }
+    AppHaptics.medium();
 
     if (SettingsService.current.particles &&
         PerformanceService.particleCount > 0) {
@@ -1578,9 +1563,7 @@ class _GameScreenState extends State<GameScreen>
     // 💥 برخورد → shake + صدا
     _triggerShake(intensity: 1.0);
     _audio.playSfx(Sfx.gameOver);
-    if (SettingsService.current.haptics) {
-      HapticFeedback.heavyImpact().catchError((_) {});
-    }
+    AppHaptics.heavy();
 
     // ⏳ صبر کن تا shake تموم شه (۳۸۰ms) + یه ذره مکث
     await Future.delayed(const Duration(milliseconds: 450));
@@ -1607,9 +1590,7 @@ class _GameScreenState extends State<GameScreen>
 
       if (_endCountdown > 1) {
         setState(() => _endCountdown--);
-        if (SettingsService.current.haptics) {
-          HapticFeedback.selectionClick().catchError((_) {});
-        }
+        AppHaptics.selection();
         if (SettingsService.current.sfx) {
           _audio.playSfx(Sfx.button);
         }
@@ -1621,9 +1602,7 @@ class _GameScreenState extends State<GameScreen>
   }
 
   Future<void> _showContinueDialog() async {
-    if (SettingsService.current.haptics) {
-      HapticFeedback.mediumImpact().catchError((_) {});
-    }
+    AppHaptics.medium();
 
     final coins = await ShopService.getCoins();
     if (!mounted) return;
@@ -1632,7 +1611,6 @@ class _GameScreenState extends State<GameScreen>
       _isShowingContinueDialog = true;
     });
   }
-
   // ═══════════════════════════════════════════════════════════
   // 🌀 Coil Placement for Emergency Rescue Respawn
   // ═══════════════════════════════════════════════════════════
@@ -1903,9 +1881,7 @@ class _GameScreenState extends State<GameScreen>
     _everHadShield = true;
     _audio.playSfx(Sfx.newRecord);
     _triggerShake(intensity: 0.55);
-    if (SettingsService.current.haptics) {
-      HapticFeedback.mediumImpact().catchError((_) {});
-    }
+    AppHaptics.medium();
 
     // ───── ذرات آبی (باگ رفع شد) ─────
     if (SettingsService.current.particles &&
@@ -1959,9 +1935,7 @@ class _GameScreenState extends State<GameScreen>
 
   void _handleContinueDecline() {
     if (!mounted) return;
-    if (SettingsService.current.haptics) {
-      HapticFeedback.selectionClick().catchError((_) {});
-    }
+    AppHaptics.selection();
     _audio.playSfx(Sfx.button);
     setState(() => _isShowingContinueDialog = false);
     _startEndCountdown();
@@ -1970,9 +1944,7 @@ class _GameScreenState extends State<GameScreen>
   Future<void> _finalizeGameOver() async {
     if (_timedOut) {
       _audio.playSfx(Sfx.gameOver);
-      if (SettingsService.current.haptics) {
-        HapticFeedback.mediumImpact().catchError((_) {});
-      }
+      AppHaptics.medium();
     }
 
     await _recordHistory(won: false);

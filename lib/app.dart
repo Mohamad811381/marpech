@@ -2,6 +2,7 @@
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:marpech/services/audio_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'screens/main_shell.dart';
 import 'services/localization_service.dart';
@@ -100,10 +101,14 @@ class _MarpechAppState extends State<MarpechApp> {
             Brightness.dark,
           ),
           themeMode: ThemeService.mode.value,
-          builder: (context, child) => Directionality(
-            textDirection: L10n.dir,
-            child: child ?? const SizedBox.shrink(),
-          ),
+        builder: (context, child) => Listener(
+  behavior: HitTestBehavior.translucent,
+  onPointerDown: (_) => AudioService().unlock(),
+  child: Directionality(
+    textDirection: L10n.dir,
+    child: child ?? const SizedBox.shrink(),
+  ),
+),
           home: const MainShell(),
         );
       },

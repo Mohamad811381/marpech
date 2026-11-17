@@ -1,0 +1,359 @@
+
+lib\main.dart:25:    await AudioService().init();
+lib\models\achievement.dart:112:  bool isUnlocked(AchievementStats s) => progress(s) >= target;
+lib\models\game_settings.dart:34:  final bool haptics;
+lib\models\game_settings.dart:48:    this.haptics = true,
+lib\models\game_settings.dart:63:    bool? haptics,
+lib\models\game_settings.dart:77:      haptics: haptics ?? this.haptics,
+lib\models\mission.dart:23:  achievementsUnlocked,
+lib\models\mission.dart:290:    metric: MissionMetric.achievementsUnlocked,
+lib\screens\achievements_screen.dart:28:  Set<String> _unlocked = {};
+lib\screens\achievements_screen.dart:31:  Map<AchievementCategory, int> _unlockedByCategory = const {};
+lib\screens\achievements_screen.dart:54:      StorageService.getUnlockedAchievements(),
+lib\screens\achievements_screen.dart:58:    final unlocked = results[1] as Set<String>;
+lib\screens\achievements_screen.dart:63:    final unlockedByCategory = <AchievementCategory, int>{
+lib\screens\achievements_screen.dart:65:        cat: categorized[cat]!.where((a) => unlocked.contains(a.id)).length,
+lib\screens\achievements_screen.dart:69:      _unlocked = unlocked;
+lib\screens\achievements_screen.dart:71:      _unlockedByCategory = unlockedByCategory;
+lib\screens\achievements_screen.dart:83:    final done = _unlocked.length;
+lib\screens\achievements_screen.dart:107:                    final isUnlocked = _unlocked.contains(a.id);
+lib\screens\achievements_screen.dart:108:                    return _achievementTile(a, stats!, isUnlocked);
+lib\screens\achievements_screen.dart:242:          final unlockedInCat = _unlockedByCategory[cat] ?? 0;
+lib\screens\achievements_screen.dart:251:                if (unlockedInCat > 0) ...[
+lib\screens\achievements_screen.dart:261:                      '$unlockedInCat',
+lib\screens\achievements_screen.dart:281:      Achievement a, AchievementStats stats, bool isUnlocked) {
+lib\screens\achievements_screen.dart:288:        color: isUnlocked ? p.surface : p.surface.withOpacity(0.5),
+lib\screens\achievements_screen.dart:291:          color: isUnlocked ? a.color.withOpacity(0.5) : p.border,
+lib\screens\achievements_screen.dart:292:          width: isUnlocked ? 1.5 : 1,
+lib\screens\achievements_screen.dart:294:        boxShadow: isUnlocked
+lib\screens\achievements_screen.dart:310:              color: isUnlocked ? a.color.withOpacity(0.15) : p.surfaceAlt,
+lib\screens\achievements_screen.dart:313:                color: isUnlocked ? a.color.withOpacity(0.6) : p.border,
+lib\screens\achievements_screen.dart:318:              isUnlocked ? a.icon : Icons.lock_rounded,
+lib\screens\achievements_screen.dart:319:              color: isUnlocked ? a.color : p.textMuted,
+lib\screens\achievements_screen.dart:336:                          color: isUnlocked ? p.textPrimary : p.textMuted,
+lib\screens\achievements_screen.dart:340:                    if (isUnlocked)
+lib\screens\achievements_screen.dart:361:                            isUnlocked ? a.color : p.accent.withOpacity(0.4),
+lib\screens\achievements_screen.dart:372:                        color: isUnlocked ? a.color : p.textMuted,
+lib\screens\chapters_screen.dart:27:  final _audio = AudioService();
+lib\screens\chapters_screen.dart:29:  int _highestUnlocked = 1;
+lib\screens\chapters_screen.dart:42:    final h = await LevelsService.getHighestUnlocked();
+lib\screens\chapters_screen.dart:46:      _highestUnlocked = h;
+lib\screens\chapters_screen.dart:60:    await _audio.playSfx(Sfx.button);
+lib\screens\daily_challenges_screen.dart:25:  final _audio = AudioService();
+lib\screens\daily_challenges_screen.dart:48:    await _audio.playSfx(Sfx.newRecord);
+lib\screens\game_screen.dart:84:  final AudioService _audio = AudioService();
+lib\screens\game_screen.dart:500:    _audio.startMusic();
+lib\screens\game_screen.dart:567:      if (SettingsService.current.haptics && _countdown > 0) {
+lib\screens\game_screen.dart:568:        HapticFeedback.selectionClick().catchError((_) {});
+lib\screens\game_screen.dart:571:        _audio.playSfx(Sfx.button);
+lib\screens\game_screen.dart:577:    _audio.playSfx(Sfx.newRecord);
+lib\screens\game_screen.dart:579:    if (SettingsService.current.haptics) {
+lib\screens\game_screen.dart:580:      HapticFeedback.selectionClick().catchError((_) {});
+lib\screens\game_screen.dart:828:    _audio.playSfx(Sfx.eat);
+lib\screens\game_screen.dart:829:    if (SettingsService.current.haptics) {
+lib\screens\game_screen.dart:830:      HapticFeedback.lightImpact().catchError((_) {});
+lib\screens\game_screen.dart:841:      _audio.playSfx(Sfx.newRecord);
+lib\screens\game_screen.dart:842:      if (SettingsService.current.haptics) {
+lib\screens\game_screen.dart:843:        HapticFeedback.mediumImpact().catchError((_) {});
+lib\screens\game_screen.dart:858:    _audio.playSfx(Sfx.newRecord);
+lib\screens\game_screen.dart:859:    if (SettingsService.current.haptics) {
+lib\screens\game_screen.dart:860:      HapticFeedback.heavyImpact().catchError((_) {});
+lib\screens\game_screen.dart:867:    await LevelsService.unlockNext(widget.level!.id);
+lib\screens\game_screen.dart:907:    await AchievementsService.checkUnlocks();
+lib\screens\game_screen.dart:993:      _audio.playSfx(Sfx.gameOver);
+lib\screens\game_screen.dart:994:      if (SettingsService.current.haptics) {
+lib\screens\game_screen.dart:995:        HapticFeedback.heavyImpact().catchError((_) {});
+lib\screens\game_screen.dart:1033:    if (SettingsService.current.haptics) {
+lib\screens\game_screen.dart:1034:      HapticFeedback.selectionClick().catchError((_) {});
+lib\screens\game_screen.dart:1036:    _audio.playSfx(Sfx.button);
+lib\screens\game_screen.dart:1098:    _audio.playSfx(Sfx.newRecord);
+lib\screens\game_screen.dart:1100:    if (SettingsService.current.haptics) {
+lib\screens\game_screen.dart:1101:      HapticFeedback.heavyImpact().catchError((_) {});
+lib\screens\game_screen.dart:1163:    _audio.playSfx(Sfx.newRecord);
+lib\screens\game_screen.dart:1165:    if (SettingsService.current.haptics) {
+lib\screens\game_screen.dart:1166:      HapticFeedback.mediumImpact().catchError((_) {});
+lib\screens\game_screen.dart:1580:    _audio.playSfx(Sfx.gameOver);
+lib\screens\game_screen.dart:1581:    if (SettingsService.current.haptics) {
+lib\screens\game_screen.dart:1582:      HapticFeedback.heavyImpact().catchError((_) {});
+lib\screens\game_screen.dart:1610:        if (SettingsService.current.haptics) {
+lib\screens\game_screen.dart:1611:          HapticFeedback.selectionClick().catchError((_) {});
+lib\screens\game_screen.dart:1614:          _audio.playSfx(Sfx.button);
+lib\screens\game_screen.dart:1624:    if (SettingsService.current.haptics) {
+lib\screens\game_screen.dart:1625:      HapticFeedback.mediumImpact().catchError((_) {});
+lib\screens\game_screen.dart:1904:    _audio.playSfx(Sfx.newRecord);
+lib\screens\game_screen.dart:1906:    if (SettingsService.current.haptics) {
+lib\screens\game_screen.dart:1907:      HapticFeedback.mediumImpact().catchError((_) {});
+lib\screens\game_screen.dart:1962:    if (SettingsService.current.haptics) {
+lib\screens\game_screen.dart:1963:      HapticFeedback.selectionClick().catchError((_) {});
+lib\screens\game_screen.dart:1965:    _audio.playSfx(Sfx.button);
+lib\screens\game_screen.dart:1972:      _audio.playSfx(Sfx.gameOver);
+lib\screens\game_screen.dart:1973:      if (SettingsService.current.haptics) {
+lib\screens\game_screen.dart:1974:        HapticFeedback.mediumImpact().catchError((_) {});
+lib\screens\game_screen.dart:2045:        _audio.playSfx(Sfx.newRecord);
+lib\screens\game_screen.dart:2259:                      enableHaptics: settings.haptics,
+lib\screens\history_screen.dart:19:  final _audio = AudioService();
+lib\screens\history_screen.dart:37:    await _audio.playSfx(Sfx.button);
+lib\screens\level_select_screen.dart:30:  final AudioService _audio = AudioService();
+lib\screens\level_select_screen.dart:31:  int _highestUnlocked = 1;
+lib\screens\level_select_screen.dart:46:    final h = await LevelsService.getHighestUnlocked();
+lib\screens\level_select_screen.dart:50:      _highestUnlocked = h;
+lib\screens\level_select_screen.dart:57:    await _audio.playSfx(Sfx.button);
+lib\screens\level_select_screen.dart:202:    final unlocked = level.id <= _highestUnlocked;
+lib\screens\level_select_screen.dart:209:      onTap: unlocked ? () => _startLevel(level) : null,
+lib\screens\level_select_screen.dart:228:                : unlocked
+lib\screens\level_select_screen.dart:255:                    color: unlocked
+lib\screens\level_select_screen.dart:275:                    if (!unlocked)
+lib\screens\level_select_screen.dart:292:                        color: unlocked
+lib\screens\level_select_screen.dart:297:                    if (unlocked) ...[
+lib\screens\main_shell.dart:34:  final _audio = AudioService();
+lib\screens\main_shell.dart:137:    if (!allOn) await _audio.playSfx(Sfx.button);
+lib\screens\missions_screen.dart:27:  final _audio = AudioService();
+lib\screens\missions_screen.dart:70:    await _audio.playSfx(Sfx.newRecord);
+lib\screens\settings_screen.dart:35:  final _audio = AudioService();
+lib\screens\settings_screen.dart:44:  Set<String> _unlockedIntros = {'none'};
+lib\screens\settings_screen.dart:46:  Set<String> _unlockedThemes = {'neon', 'sunset', 'cyber'};
+lib\screens\settings_screen.dart:47:  Set<String> _unlockedSnakeSkins = {'basic'};
+lib\screens\settings_screen.dart:48:  Set<String> _unlockedGhostSkins = {'basic'};
+lib\screens\settings_screen.dart:49:  Set<String> _unlockedFoodSkins = {'basic'};
+lib\screens\settings_screen.dart:50:  Set<String> _unlockedTrails = {'none'};
+lib\screens\settings_screen.dart:51:  Set<String> _unlockedPatterns = {'none'};
+lib\screens\settings_screen.dart:139:            await _audio.playSfx(Sfx.button);
+lib\screens\settings_screen.dart:148:    final themes = await ShopService.getUnlockedThemes();
+lib\screens\settings_screen.dart:149:    final snakeSkins = await ShopService.getUnlockedSnakeSkins();
+lib\screens\settings_screen.dart:150:    final ghostSkins = await ShopService.getUnlockedGhostSkins();
+lib\screens\settings_screen.dart:151:    final foodSkins = await ShopService.getUnlockedFoodSkins();
+lib\screens\settings_screen.dart:152:    final trails = await ShopService.getUnlockedTrails();
+lib\screens\settings_screen.dart:153:    final patterns = await ShopService.getUnlockedPatterns();
+lib\screens\settings_screen.dart:154:    final intros = await ShopService.getUnlockedIntros();
+lib\screens\settings_screen.dart:167:      _unlockedThemes = themes;
+lib\screens\settings_screen.dart:168:      _unlockedSnakeSkins = snakeSkins;
+lib\screens\settings_screen.dart:169:      _unlockedGhostSkins = ghostSkins;
+lib\screens\settings_screen.dart:170:      _unlockedFoodSkins = foodSkins;
+lib\screens\settings_screen.dart:171:      _unlockedTrails = trails;
+lib\screens\settings_screen.dart:172:      _unlockedPatterns = patterns;
+lib\screens\settings_screen.dart:173:      _unlockedIntros = intros;
+lib\screens\settings_screen.dart:636:            await _audio.playSfx(Sfx.button);
+lib\screens\settings_screen.dart:646:            await _audio.playSfx(Sfx.button);
+lib\screens\settings_screen.dart:697:      if (_unlockedThemes.contains(pal.id)) return true;
+lib\screens\settings_screen.dart:707:        final owned = _unlockedThemes.contains(pal.id) ||
+lib\screens\settings_screen.dart:730:                  await _audio.playSfx(Sfx.button);
+lib\screens\settings_screen.dart:747:        await _audio.playSfx(Sfx.button);
+lib\screens\settings_screen.dart:772:          L10n.t('settings_haptics'),
+lib\screens\settings_screen.dart:773:          _settings.haptics,
+lib\screens\settings_screen.dart:774:          (v) => _update(_settings.copyWith(haptics: v)),
+lib\screens\settings_screen.dart:842:            await _audio.playSfx(Sfx.button);
+lib\screens\settings_screen.dart:1236:                    _unlockedSnakeSkins.contains(s.id) ||
+lib\screens\settings_screen.dart:1240:              final owned = _unlockedSnakeSkins.contains(skin.id) ||
+lib\screens\settings_screen.dart:1249:                        await _audio.playSfx(Sfx.button);
+lib\screens\settings_screen.dart:1284:                    _unlockedGhostSkins.contains(s.id) ||
+lib\screens\settings_screen.dart:1288:              final owned = _unlockedGhostSkins.contains(skin.id) ||
+lib\screens\settings_screen.dart:1297:                        await _audio.playSfx(Sfx.button);
+lib\screens\settings_screen.dart:1332:                    _unlockedFoodSkins.contains(s.id) ||
+lib\screens\settings_screen.dart:1336:              final owned = _unlockedFoodSkins.contains(skin.id) ||
+lib\screens\settings_screen.dart:1345:                        await _audio.playSfx(Sfx.button);
+lib\screens\settings_screen.dart:1380:                    _unlockedTrails.contains(s.id) ||
+lib\screens\settings_screen.dart:1384:              final owned = _unlockedTrails.contains(trail.id) ||
+lib\screens\settings_screen.dart:1393:                        await _audio.playSfx(Sfx.button);
+lib\screens\settings_screen.dart:1428:                    _unlockedPatterns.contains(s.id) ||
+lib\screens\settings_screen.dart:1432:              final owned = _unlockedPatterns.contains(pattern.id) ||
+lib\screens\settings_screen.dart:1441:                        await _audio.playSfx(Sfx.button);
+lib\screens\settings_screen.dart:1476:                        await _audio.playSfx(Sfx.button);
+lib\screens\settings_screen.dart:1531:                    _unlockedIntros.contains(s.id) ||
+lib\screens\settings_screen.dart:1535:              final owned = _unlockedIntros.contains(intro.id) ||
+lib\screens\settings_screen.dart:1544:                        await _audio.playSfx(Sfx.button);
+lib\screens\shop_screen.dart:37:  final _audio = AudioService();
+lib\screens\shop_screen.dart:79:    final themes = await ShopService.getUnlockedThemes();
+lib\screens\shop_screen.dart:80:    final snakeSkins = await ShopService.getUnlockedSnakeSkins();
+lib\screens\shop_screen.dart:81:    final ghostSkins = await ShopService.getUnlockedGhostSkins();
+lib\screens\shop_screen.dart:82:    final foodSkins = await ShopService.getUnlockedFoodSkins();
+lib\screens\shop_screen.dart:83:    final trails = await ShopService.getUnlockedTrails();
+lib\screens\shop_screen.dart:84:    final patterns = await ShopService.getUnlockedPatterns();
+lib\screens\shop_screen.dart:85:    final intros = await ShopService.getUnlockedIntros();          // ← این
+lib\screens\shop_screen.dart:173:    await _audio.playSfx(Sfx.button);
+lib\screens\shop_screen.dart:180:    await _audio.playSfx(Sfx.newRecord);
+lib\screens\shop_screen.dart:192:    await AchievementsService.checkUnlocks();
+lib\screens\shop_screen.dart:197:    await _audio.playSfx(Sfx.button);
+lib\screens\shop_screen.dart:473:    await _audio.playSfx(Sfx.button);
+lib\screens\shop_screen.dart:919:    await _audio.playSfx(Sfx.button);
+lib\screens\stats_screen.dart:28:  final AudioService _audio = AudioService();
+lib\screens\stats_screen.dart:30:  Set<String> _unlocked = {};
+lib\screens\stats_screen.dart:43:      StorageService.getUnlockedAchievements(),
+lib\screens\stats_screen.dart:48:      _unlocked = results[1] as Set<String>;
+lib\screens\stats_screen.dart:53:    await _audio.playSfx(Sfx.button);
+lib\screens\stats_screen.dart:450:    final unlocked = _unlocked.length;
+lib\screens\stats_screen.dart:451:    final ratio = total == 0 ? 0.0 : unlocked / total;
+lib\screens\stats_screen.dart:478:                '$unlocked/$total',
+lib\screens\stats_screen.dart:499:            unlocked == total
+lib\screens\stats_screen.dart:502:                    'stats_achievements_remaining', {'n': total - unlocked}),
+lib\screens\stats_screen.dart:518:          await _audio.playSfx(Sfx.button);
+lib\screens\winner_screen.dart:23:  final _audio = AudioService();
+lib\screens\winner_screen.dart:33:  int _achievementsUnlocked = 0;
+lib\screens\winner_screen.dart:54:    _audio.playSfx(Sfx.newRecord);
+lib\screens\winner_screen.dart:74:    final ach = await AchievementsService.unlockedCount();
+lib\screens\winner_screen.dart:81:      _achievementsUnlocked = ach;
+lib\screens\winner_screen.dart:254:        value: '$_achievementsUnlocked',
+lib\screens\winner_screen.dart:404:          _audio.playSfx(Sfx.button);
+lib\screens\game\game_overlays.dart:555:  final _audio = AudioService();
+lib\screens\game\game_overlays.dart:599:    await _audio.playSfx(Sfx.button);
+lib\screens\game\game_overlays.dart:607:    await _audio.playSfx(Sfx.button);
+lib\screens\game\game_overlays.dart:920:  final _audio = AudioService();
+lib\screens\game\game_overlays.dart:964:    await _audio.playSfx(Sfx.button);
+lib\screens\game\game_overlays.dart:972:    await _audio.playSfx(Sfx.button);
+lib\screens\tabs\daily_tab.dart:20:  final _audio = AudioService();
+lib\screens\tabs\daily_tab.dart:38:    await _audio.playSfx(Sfx.button);
+lib\screens\tabs\home_tab.dart:58:  final _audio = AudioService();
+lib\screens\tabs\home_tab.dart:141:    await _audio.playSfx(Sfx.button);
+lib\screens\tabs\home_tab.dart:149:    await _audio.playSfx(Sfx.button);
+lib\screens\tabs\home_tab.dart:160:      final unlocked = await ShopService.getUnlockedThemes();
+lib\screens\tabs\home_tab.dart:166:        if (unlocked.contains(palettes[idx].id)) {
+lib\screens\tabs\home_tab.dart:179:    await _audio.playSfx(Sfx.button);
+lib\screens\tabs\home_tab.dart:191:    await _audio.playSfx(Sfx.button);
+lib\screens\tabs\home_tab.dart:207:    await _audio.playSfx(Sfx.button);
+lib\screens\tabs\home_tab.dart:222:    await _audio.playSfx(Sfx.button);
+lib\screens\tabs\home_tab.dart:328:        _audio.playSfx(Sfx.button);
+lib\services\achievements_service.dart:47:    final themes = await ShopService.getUnlockedThemes();
+lib\services\achievements_service.dart:48:    final snakes = await ShopService.getUnlockedSnakeSkins();
+lib\services\achievements_service.dart:49:    final ghosts = await ShopService.getUnlockedGhostSkins();
+lib\services\achievements_service.dart:50:    final foods = await ShopService.getUnlockedFoodSkins();
+lib\services\achievements_service.dart:51:    final trails = await ShopService.getUnlockedTrails();
+lib\services\achievements_service.dart:52:    final patterns = await ShopService.getUnlockedPatterns();
+lib\services\achievements_service.dart:53:    final intros = await ShopService.getUnlockedIntros();
+lib\services\achievements_service.dart:108:    final unlocked = await StorageService.getUnlockedAchievements();
+lib\services\achievements_service.dart:109:    final newlyUnlocked = <Achievement>[];
+lib\services\achievements_service.dart:112:      if (!unlocked.contains(a.id) && a.isUnlocked(stats)) {
+lib\services\achievements_service.dart:113:        unlocked.add(a.id);
+lib\services\achievements_service.dart:114:        newlyUnlocked.add(a);
+lib\services\achievements_service.dart:118:    if (newlyUnlocked.isNotEmpty) {
+lib\services\achievements_service.dart:119:      await StorageService.setUnlockedAchievements(unlocked);
+lib\services\achievements_service.dart:122:    for (final a in newlyUnlocked) {
+lib\services\achievements_service.dart:130:    return newlyUnlocked;
+lib\services\achievements_service.dart:134:  static Future<List<Achievement>> checkUnlocks() async {
+lib\services\achievements_service.dart:136:    final unlocked = await StorageService.getUnlockedAchievements();
+lib\services\achievements_service.dart:137:    final newlyUnlocked = <Achievement>[];
+lib\services\achievements_service.dart:140:      if (!unlocked.contains(a.id) && a.isUnlocked(stats)) {
+lib\services\achievements_service.dart:141:        unlocked.add(a.id);
+lib\services\achievements_service.dart:142:        newlyUnlocked.add(a);
+lib\services\achievements_service.dart:146:    if (newlyUnlocked.isNotEmpty) {
+lib\services\achievements_service.dart:147:      await StorageService.setUnlockedAchievements(unlocked);
+lib\services\achievements_service.dart:149:    for (final a in newlyUnlocked) {
+lib\services\achievements_service.dart:157:    return newlyUnlocked;
+lib\services\achievements_service.dart:160:  static Future<int> unlockedCount() async {
+lib\services\achievements_service.dart:161:    return (await StorageService.getUnlockedAchievements()).length;
+lib\services\audio_service.dart:7:class AudioService {
+lib\services\audio_service.dart:8:  AudioService._();
+lib\services\audio_service.dart:9:  static final AudioService _instance = AudioService._();
+lib\services\audio_service.dart:10:  factory AudioService() => _instance;
+lib\services\audio_service.dart:25:  Future<void> playSfx(Sfx sfx) async {
+lib\services\audio_service.dart:35:  Future<void> startMusic() async {
+lib\services\levels_service.dart:885:  // static Future<int> getHighestUnlocked() async {
+lib\services\levels_service.dart:891:  static Future<int> getHighestUnlocked() async {
+lib\services\levels_service.dart:897:  static Future<void> unlockNext(int currentId) async {
+lib\services\missions_service.dart:122:      case MissionMetric.achievementsUnlocked:
+lib\services\missions_service.dart:123:        final unlocked = await StorageService.getUnlockedAchievements();
+lib\services\missions_service.dart:124:        return unlocked.length;
+lib\services\settings_service.dart:8:  static const _kHaptics = 'set_haptics';
+lib\services\settings_service.dart:27:      haptics: p.getBool(_kHaptics) ?? true,
+lib\services\settings_service.dart:48:    await p.setBool(_kHaptics, s.haptics);
+lib\services\shop_service.dart:380:  static const _unlockedThemesKey = 'shop_themes';
+lib\services\shop_service.dart:381:  static const _unlockedSnakeSkinsKey = 'shop_snake_skins';
+lib\services\shop_service.dart:382:  static const _unlockedGhostSkinsKey = 'shop_ghost_skins';
+lib\services\shop_service.dart:383:  static const _unlockedFoodSkinsKey = 'shop_food_skins';
+lib\services\shop_service.dart:384:  static const _unlockedTrailsKey = 'shop_trails';
+lib\services\shop_service.dart:390:  static const _unlockedPatternsKey = 'shop_patterns';
+lib\services\shop_service.dart:393:  static const _unlockedIntrosKey = 'shop_intros';
+lib\services\shop_service.dart:428:  static Future<Set<String>> getUnlockedThemes() async {
+lib\services\shop_service.dart:430:    final list = p.getStringList(_unlockedThemesKey) ?? [];
+lib\services\shop_service.dart:434:  static Future<bool> isThemeUnlocked(String id) async {
+lib\services\shop_service.dart:436:    return (await getUnlockedThemes()).contains(id);
+lib\services\shop_service.dart:441:  static Future<Set<String>> getUnlockedSnakeSkins() async {
+lib\services\shop_service.dart:443:    final list = p.getStringList(_unlockedSnakeSkinsKey) ?? [];
+lib\services\shop_service.dart:447:  static Future<bool> isSnakeSkinUnlocked(String id) async {
+lib\services\shop_service.dart:449:    return (await getUnlockedSnakeSkins()).contains(id);
+lib\services\shop_service.dart:459:    if (!await isSnakeSkinUnlocked(id)) {
+lib\services\shop_service.dart:470:  static Future<Set<String>> getUnlockedGhostSkins() async {
+lib\services\shop_service.dart:472:    final list = p.getStringList(_unlockedGhostSkinsKey) ?? [];
+lib\services\shop_service.dart:476:  static Future<bool> isGhostSkinUnlocked(String id) async {
+lib\services\shop_service.dart:478:    return (await getUnlockedGhostSkins()).contains(id);
+lib\services\shop_service.dart:487:    if (!await isGhostSkinUnlocked(id)) {
+lib\services\shop_service.dart:498:  static Future<Set<String>> getUnlockedFoodSkins() async {
+lib\services\shop_service.dart:500:    final list = p.getStringList(_unlockedFoodSkinsKey) ?? [];
+lib\services\shop_service.dart:504:  static Future<bool> isFoodSkinUnlocked(String id) async {
+lib\services\shop_service.dart:506:    return (await getUnlockedFoodSkins()).contains(id);
+lib\services\shop_service.dart:515:    if (!await isFoodSkinUnlocked(id)) {
+lib\services\shop_service.dart:526:  static Future<Set<String>> getUnlockedTrails() async {
+lib\services\shop_service.dart:528:    final list = p.getStringList(_unlockedTrailsKey) ?? [];
+lib\services\shop_service.dart:532:  static Future<bool> isTrailUnlocked(String id) async {
+lib\services\shop_service.dart:534:    return (await getUnlockedTrails()).contains(id);
+lib\services\shop_service.dart:543:    if (!await isTrailUnlocked(id)) {
+lib\services\shop_service.dart:560:        return isThemeUnlocked(item.id);
+lib\services\shop_service.dart:562:        return isSnakeSkinUnlocked(item.id);
+lib\services\shop_service.dart:564:        return isGhostSkinUnlocked(item.id);
+lib\services\shop_service.dart:566:        return isFoodSkinUnlocked(item.id);
+lib\services\shop_service.dart:568:        return isTrailUnlocked(item.id);
+lib\services\shop_service.dart:570:        return isPatternUnlocked(item.id);
+lib\services\shop_service.dart:572:        return isIntroUnlocked(item.id);
+lib\services\shop_service.dart:578:  static Future<Set<String>> getUnlockedPatterns() async {
+lib\services\shop_service.dart:580:    final list = p.getStringList(_unlockedPatternsKey) ?? [];
+lib\services\shop_service.dart:584:  static Future<bool> isPatternUnlocked(String id) async {
+lib\services\shop_service.dart:586:    return (await getUnlockedPatterns()).contains(id);
+lib\services\shop_service.dart:595:    if (!await isPatternUnlocked(id)) {
+lib\services\shop_service.dart:616:  static Future<Set<String>> getUnlockedIntros() async {
+lib\services\shop_service.dart:618:    final list = p.getStringList(_unlockedIntrosKey) ?? [];
+lib\services\shop_service.dart:622:  static Future<bool> isIntroUnlocked(String id) async {
+lib\services\shop_service.dart:624:    return (await getUnlockedIntros()).contains(id);
+lib\services\shop_service.dart:633:    if (!await isIntroUnlocked(id)) {
+lib\services\shop_service.dart:656:        final list = p.getStringList(_unlockedThemesKey) ?? [];
+lib\services\shop_service.dart:658:        await p.setStringList(_unlockedThemesKey, list);
+lib\services\shop_service.dart:661:        final list = p.getStringList(_unlockedSnakeSkinsKey) ?? [];
+lib\services\shop_service.dart:663:        await p.setStringList(_unlockedSnakeSkinsKey, list);
+lib\services\shop_service.dart:666:        final list = p.getStringList(_unlockedGhostSkinsKey) ?? [];
+lib\services\shop_service.dart:668:        await p.setStringList(_unlockedGhostSkinsKey, list);
+lib\services\shop_service.dart:671:        final list = p.getStringList(_unlockedFoodSkinsKey) ?? [];
+lib\services\shop_service.dart:673:        await p.setStringList(_unlockedFoodSkinsKey, list);
+lib\services\shop_service.dart:676:        final list = p.getStringList(_unlockedTrailsKey) ?? [];
+lib\services\shop_service.dart:678:        await p.setStringList(_unlockedTrailsKey, list);
+lib\services\shop_service.dart:681:        final list = p.getStringList(_unlockedPatternsKey) ?? [];
+lib\services\shop_service.dart:683:        await p.setStringList(_unlockedPatternsKey, list);
+lib\services\shop_service.dart:687:        final list = p.getStringList(_unlockedIntrosKey) ?? [];
+lib\services\shop_service.dart:689:        await p.setStringList(_unlockedIntrosKey, list);
+lib\services\shop_service.dart:709:    if ((p.getStringList(_unlockedThemesKey) ?? []).contains(id)) return true;
+lib\services\shop_service.dart:710:    if ((p.getStringList(_unlockedSnakeSkinsKey) ?? []).contains(id))
+lib\services\shop_service.dart:712:    if ((p.getStringList(_unlockedGhostSkinsKey) ?? []).contains(id))
+lib\services\shop_service.dart:714:    if ((p.getStringList(_unlockedFoodSkinsKey) ?? []).contains(id))
+lib\services\shop_service.dart:716:    if ((p.getStringList(_unlockedTrailsKey) ?? []).contains(id)) return true;
+lib\services\shop_service.dart:717:    if ((p.getStringList(_unlockedPatternsKey) ?? []).contains(id)) return true;
+lib\services\shop_service.dart:718:    if ((p.getStringList(_unlockedIntrosKey) ?? []).contains(id)) return true;
+lib\services\storage_service.dart:12:  static const _unlockedKey = 'stats_unlocked_achievements';
+lib\services\storage_service.dart:150:  static Future<Set<String>> getUnlockedAchievements() async {
+lib\services\storage_service.dart:152:    return (p.getStringList(_unlockedKey) ?? []).toSet();
+lib\services\storage_service.dart:155:  static Future<void> setUnlockedAchievements(Set<String> ids) async {
+lib\services\storage_service.dart:157:    await p.setStringList(_unlockedKey, ids.toList());
+lib\services\storage_service.dart:243:    await p.remove(_unlockedKey);
+lib\services\translations.dart:82:    'settings_haptics': 'لرزش (هاپتیک)',
+lib\services\translations.dart:83:    'settings_haptics_sub': 'بازخورد لمسی (فقط موبایل)',
+lib\services\translations.dart:147:    'stats_all_unlocked': 'همه‌ی دستاوردها آزاد شده‌اند 🎉',
+lib\services\translations.dart:846:    'settings_haptics': 'Haptics',
+lib\services\translations.dart:847:    'settings_haptics_sub': 'Tactile feedback (mobile only)',
+lib\services\translations.dart:898:    'achievements_sub': '{n} of {m} unlocked',
+lib\services\translations.dart:911:    'stats_all_unlocked': 'All achievements unlocked 🎉',
+lib\services\translations.dart:978:    'mission_achievement_hunter_desc': 'Unlock achievements',
+lib\services\translations.dart:1052:    'stats_achievements_all': 'All achievements unlocked 🎉',
+lib\services\translations.dart:1275:        'We do not collect any personal information. All game data (scores, coins, unlocked items, achievements, settings) is stored locally on your device.',
+lib\services\translations.dart:1460:    'player_progress_no_upcoming': 'All rewards unlocked! 🎉',
+lib\widgets\app_drawer.dart:41:  final _audio = AudioService();
+lib\widgets\app_drawer.dart:237:    await _audio.playSfx(Sfx.button);
+lib\widgets\app_drawer.dart:248:      final unlocked = await ShopService.getUnlockedThemes();
+lib\widgets\app_drawer.dart:254:        if (unlocked.contains(palettes[idx].id)) {
+lib\widgets\daily_reward_dialog.dart:25:  final _audio = AudioService();
+lib\widgets\daily_reward_dialog.dart:42:    await _audio.playSfx(Sfx.newRecord);
+lib\widgets\level_up_dialog.dart:103:  final _audio = AudioService();
+lib\widgets\level_up_dialog.dart:117:      _audio.playSfx(Sfx.newRecord);
+lib\widgets\level_up_dialog.dart:118:      if (SettingsService.current.haptics) {
+lib\widgets\level_up_dialog.dart:119:        HapticFeedback.heavyImpact().catchError((_) {});
+lib\widgets\virtual_joystick.dart:24:  final bool enableHaptics;
+lib\widgets\virtual_joystick.dart:33:    this.enableHaptics = true,
+lib\widgets\virtual_joystick.dart:100:    if (widget.enableHaptics) {
+lib\widgets\virtual_joystick.dart:101:      HapticFeedback.lightImpact().catchError((_) {});
+lib\widgets\virtual_joystick.dart:150:      if (widget.enableHaptics && newDir != const Point(0, 0)) {
+lib\widgets\virtual_joystick.dart:151:        HapticFeedback.selectionClick().catchError((_) {});
+

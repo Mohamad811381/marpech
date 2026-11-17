@@ -11,7 +11,10 @@ class AudioService {
 
   final AudioPlayer _sfx = AudioPlayer(playerId: 'marpech_sfx');
   final AudioPlayer _music = AudioPlayer(playerId: 'marpech_music');
+
   bool _initialized = false;
+  bool _unlocked = false;
+  bool _wantsMusic = false;
 
   Future<void> init() async {
     if (_initialized) return;
@@ -20,6 +23,22 @@ class AudioService {
     await _music.setReleaseMode(ReleaseMode.loop);
     await _sfx.setVolume(0.75);
     await _music.setVolume(0.25);
+    try {
+      final ctx = AudioContextConfig(
+        focus: AudioContextConfigFocus.mixWithOthers,
+      ).build();
+      await _sfx.setAudioContext(ctx);
+      await _music.setAudioContext(ctx);
+    } catch (e) {
+      if (kDebugMode) debugPrint('🔊 AudioContext error: $e');
+    }
+  }
+
+  /// با اولین تعامل کاربر صدا زده می‌شود (فقط روی وب لازم است)
+  Future<void> unlock() async {
+    if (_unlocked) return;
+    _unlocked = true;
+    if (_wantsMusic) await startMusic();
   }
 
   Future<void> playSfx(Sfx sfx) async {
@@ -33,10 +52,16 @@ class AudioService {
   }
 
   Future<void> startMusic() async {
+    _wantsMusic = true;
     if (!SettingsService.current.music) return;
+    if (kIsWeb && !_unlocked) return;
     try {
       if (_music.state == PlayerState.playing) return;
-      await _music.play(AssetSource('audio/music.mp3'));
+      if (_music.state == PlayerState.paused) {
+        await _music.resume();
+      } else {
+        await _music.play(AssetSource('audio/music.mp3'));
+      }
     } catch (e) {
       if (kDebugMode) debugPrint('🎵 Music error: $e');
     }
@@ -48,23 +73,18 @@ class AudioService {
     } catch (_) {}
   }
 
-  Future<void> resumeMusic() async {
-    if (!SettingsService.current.music) return;
-    try {
-      if (_music.state == PlayerState.paused) await _music.resume();
-    } catch (_) {}
-  }
+  Future<void> resumeMusic() => startMusic();
 
   Future<void> stopMusic() async {
+    _wantsMusic = false;
     try {
       await _music.stop();
     } catch (_) {}
   }
 
-  /// بعد از هر تغییر در تنظیمات صدا صدا زده می‌شود
   Future<void> onSettingsChanged() async {
     if (SettingsService.current.music) {
-      await resumeMusic();
+      await startMusic();
     } else {
       await pauseMusic();
     }

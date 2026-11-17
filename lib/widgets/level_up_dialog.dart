@@ -1,4 +1,4 @@
-// ignore_for_file: deprecated_member_use
+// ignore_for_file: unused_import, unnecessary_import, deprecated_member_use
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -11,6 +11,7 @@ import '../services/localization_service.dart';
 import '../services/player_progression_service.dart';
 import '../services/settings_service.dart';
 import 'xp_progress_bar.dart';
+import '../services/app_haptics.dart';
 
 /// Batch aggregate از چند AddXpResult
 class LevelUpBatch {
@@ -115,9 +116,7 @@ class _LevelUpDialogState extends State<LevelUpDialog>
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _audio.playSfx(Sfx.newRecord);
-      if (SettingsService.current.haptics) {
-        HapticFeedback.heavyImpact().catchError((_) {});
-      }
+           AppHaptics.heavy();
     });
   }
 

@@ -1,8 +1,9 @@
-// ignore_for_file: deprecated_member_use
+// ignore_for_file: unnecessary_import, deprecated_member_use
 
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:marpech/services/app_haptics.dart';
 
 class VirtualJoystick extends StatefulWidget {
   /// اندازه‌ی کل پد (px)
@@ -98,7 +99,7 @@ class _VirtualJoystickState extends State<VirtualJoystick>
     final clamped = _clampToMax(local - center);
     setState(() => _thumb = clamped);
     if (widget.enableHaptics) {
-      HapticFeedback.lightImpact().catchError((_) {});
+      AppHaptics.light();
     }
     _updateDirection(clamped);
   }
@@ -148,7 +149,7 @@ class _VirtualJoystickState extends State<VirtualJoystick>
     if (prev != newDir) {
       _activeDir = newDir == const Point(0, 0) ? null : newDir;
       if (widget.enableHaptics && newDir != const Point(0, 0)) {
-        HapticFeedback.selectionClick().catchError((_) {});
+        AppHaptics.selection();
       }
       widget.onDirection(newDir);
     }
