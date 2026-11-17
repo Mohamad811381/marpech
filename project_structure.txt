@@ -15,6 +15,8 @@
        game_over.mp3
        music.mp3
        new_record.mp3
+    icon
+       icon.png
     icon.png
  lib
     models
@@ -63,6 +65,7 @@
        winner_screen.dart
     services
        achievements_service.dart
+       app_haptics.dart
        audio_service.dart
        daily_challenges_service.dart
        daily_reward_service.dart
@@ -126,3 +129,4 @@
  pubspec.lock
  pubspec.yaml
  README.md
+ result.txt
