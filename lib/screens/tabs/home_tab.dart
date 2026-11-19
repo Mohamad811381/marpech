@@ -2,6 +2,7 @@
 
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:marpech/models/chapter.dart';
 import 'package:marpech/services/performance_service.dart';
 import 'package:marpech/services/theme_service.dart';
 import '../../models/difficulty.dart';
@@ -20,6 +21,8 @@ import '../../widgets/level_badge.dart';
 import '../../widgets/board_painter.dart';
 import '../../models/skins.dart';
 import '../../models/board_pattern.dart';
+import '../../services/achievements_service.dart';
+import '../achievements_screen.dart';
 
 class HomeTab extends StatefulWidget {
   final GamePalette palette;
@@ -37,15 +40,28 @@ class HomeTab extends StatefulWidget {
   State<HomeTab> createState() => _HomeTabState();
 }
 
-class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
+class _HomeTabState extends State<HomeTab> with TickerProviderStateMixin {
   Difficulty _difficulty = Difficulty.normal;
   int _best = 0;
   int _timeAttackBest = 0;
   bool _loaded = false;
   int _completedLevels = 0;
+  Set<int> _completedIds = {};
   int _coins = 0;
   DailyRewardStatus? _rewardStatus;
   int _playerXp = 0;
+  int _unlockedAchievements = 0;
+
+  // 🎞️ مقایسه‌ی قبل و بعد از بازی
+  int _prevCompletedLevels = 0;
+  bool _snapshotTaken = false;
+  int _gainedLevels = 0;
+  bool _showGain = false;
+  late final AnimationController _numberAnim;
+  late final AnimationController _dotPulse;
+  // شماره‌ی مرحله‌ای که در این بازی تازه تمام شده (برای پالس نقطه)
+  int? _freshDoneId;
+
   // اسکین‌های پیش‌نمایش (از انتخاب‌های کاربر)
   SnakeSkin _previewSnakeSkin = SnakeSkin.basic;
   FoodSkin _previewFoodSkin = FoodSkin.basic;
@@ -53,7 +69,21 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
   BoardPattern _previewPattern = BoardPattern.none;
   PatternIntensity _previewIntensity = PatternIntensity.subtle;
 
+  static const _previewSnake = [
+    math.Point(2, 3),
+    math.Point(3, 3),
+    math.Point(4, 3),
+    math.Point(5, 3),
+    math.Point(5, 4),
+    math.Point(5, 5),
+    math.Point(4, 5),
+  ];
+
   late final AnimationController _boardPulse;
+  late final AnimationController _pulse;
+  late final AnimationController _enter;
+  late final Animation<double> _enterFade;
+  late final Animation<Offset> _enterSlide;
 
   final _audio = AudioService();
   GamePalette get p => widget.palette;
@@ -63,27 +93,56 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
   FontStyle get _italic => L10n.isFa ? FontStyle.normal : FontStyle.italic;
   String _upper(String s) => L10n.isFa ? s : s.toUpperCase();
 
+  bool get _animationsEnabled =>
+      PerformanceService.effective != EffectiveQuality.low;
+
   @override
   void initState() {
     super.initState();
     PlayerProgressionService.pendingLevelUps.addListener(_onProgressionChanged);
+
     _boardPulse = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 4),
     );
+    _pulse = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    );
+    _enter = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 650),
+    );
+    _enterFade = CurvedAnimation(parent: _enter, curve: Curves.easeOut);
+    _enterSlide = Tween<Offset>(
+      begin: const Offset(0, 0.05),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _enter, curve: Curves.easeOutCubic));
+    _enter.forward();
+
+    _numberAnim = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 450),
+    );
+    _dotPulse = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
+
     _load();
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final enabled = TickerMode.of(context) &&
-        PerformanceService.effective != EffectiveQuality.low;
+    final enabled = TickerMode.of(context) && _animationsEnabled;
 
-    if (enabled && !_boardPulse.isAnimating) {
-      _boardPulse.repeat();
-    } else if (!enabled && _boardPulse.isAnimating) {
+    if (enabled) {
+      if (!_boardPulse.isAnimating) _boardPulse.repeat();
+      if (!_pulse.isAnimating) _pulse.repeat(reverse: true);
+    } else {
       _boardPulse.stop();
+      _pulse.stop();
     }
   }
 
@@ -92,6 +151,10 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
     PlayerProgressionService.pendingLevelUps
         .removeListener(_onProgressionChanged);
     _boardPulse.dispose();
+    _pulse.dispose();
+    _enter.dispose();
+    _numberAnim.dispose();
+    _dotPulse.dispose();
     super.dispose();
   }
 
@@ -118,22 +181,25 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
     final d = results[0] as int;
     final diff = Difficulty.values[d.clamp(0, Difficulty.values.length - 1)];
     final b = await StorageService.getBestScore(diff);
-
+    final unlockedAch = await AchievementsService.unlockedCount();
     if (!mounted) return;
     setState(() {
       _difficulty = diff;
       _best = b;
       _timeAttackBest = results[1] as int;
-      _completedLevels = (results[2] as Iterable).length;
+      _completedIds = Set<int>.from(results[2] as Iterable);
+      _completedLevels = _completedIds.length;
       _coins = results[3] as int;
       _rewardStatus = results[4] as DailyRewardStatus;
       _playerXp = results[5] as int;
+      _unlockedAchievements = unlockedAch;
       _previewSnakeSkin = SnakeSkin.fromId(results[6] as String);
       _previewFoodSkin = FoodSkin.fromId(results[7] as String);
       _previewTrail = TrailEffect.fromId(results[8] as String);
       _previewPattern = BoardPattern.fromId(results[9] as String);
       _previewIntensity = PatternIntensity.fromId(results[10] as String);
       _loaded = true;
+      _compareAfterGame();
     });
   }
 
@@ -150,13 +216,11 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
     final isLight = ThemeService.isLight(context);
 
     if (isLight) {
-      // چرخش بین پالت‌های روشن (همه‌ی پالت‌های روشن رایگان‌اند)
       final currentId = ThemeService.lightPaletteId.value;
       final currentIdx = lightPalettes.indexWhere((p) => p.id == currentId);
       final next = lightPalettes[(currentIdx + 1) % lightPalettes.length];
       await ThemeService.setLightPalette(next);
     } else {
-      // چرخش بین پالت‌های تاریک باز شده
       final unlocked = await ShopService.getUnlockedThemes();
       final currentId = ThemeService.darkPalette.value.id;
       final currentIdx = palettes.indexWhere((p) => p.id == currentId);
@@ -178,6 +242,7 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
   Future<void> _startFree() async {
     await _audio.playSfx(Sfx.button);
     if (!mounted) return;
+    _snapshotBeforeGame();
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => GameScreen(difficulty: _difficulty, palette: p),
@@ -190,6 +255,7 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
   Future<void> _startTimeAttack() async {
     await _audio.playSfx(Sfx.button);
     if (!mounted) return;
+    _snapshotBeforeGame();
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => GameScreen(
@@ -206,11 +272,84 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
   Future<void> _openLevels() async {
     await _audio.playSfx(Sfx.button);
     if (!mounted) return;
+    _snapshotBeforeGame();
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => ChaptersScreen(
           palette: p,
           difficulty: _difficulty,
+        ),
+      ),
+    );
+    if (!mounted) return;
+    await _load();
+  }
+
+  /// قبل از رفتن به بازی وضعیت فعلی رو ذخیره می‌کنه
+  void _snapshotBeforeGame() {
+    _prevCompletedLevels = _completedLevels;
+    _snapshotTaken = true;
+  }
+
+  /// بعد از برگشت از بازی مقایسه می‌کنه و انیمیشن‌های عدد و نقطه رو اجرا می‌کنه.
+  void _compareAfterGame() {
+    if (!_snapshotTaken) return;
+    _snapshotTaken = false;
+
+    final levelGain = _completedLevels - _prevCompletedLevels;
+    if (levelGain <= 0) return;
+
+    _gainedLevels = levelGain;
+    _showGain = true;
+
+    // تازه‌ترین مرحله‌ی تمام‌شده: بزرگ‌ترین شماره‌ی جدید
+    _freshDoneId = _completedIds
+        .where((id) => id > _prevCompletedLevels)
+        .fold<int?>(null, (acc, id) => acc == null || id > acc ? id : acc);
+
+    if (_animationsEnabled) {
+      _numberAnim.forward(from: 0);
+      _dotPulse.forward(from: 0);
+    }
+
+    Future.delayed(const Duration(milliseconds: 4000), () {
+      if (mounted) setState(() => _showGain = false);
+    });
+  }
+
+  Future<void> _openAchievements() async {
+    await _audio.playSfx(Sfx.button);
+    if (!mounted) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => AchievementsScreen(palette: p),
+      ),
+    );
+    if (!mounted) return;
+    await _load();
+  }
+
+  Future<void> _playNextLevel() async {
+    final total = LevelsService.all.length;
+    final level = _completedIds.length >= total
+        ? null
+        : LevelsService.getById(_nextLevelId(total));
+
+    // اگه همه‌ی مراحل تمام شده، فقط فصل‌ها رو باز کن
+    if (level == null) {
+      await _openLevels();
+      return;
+    }
+
+    await _audio.playSfx(Sfx.button);
+    if (!mounted) return;
+    _snapshotBeforeGame();
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => GameScreen(
+          difficulty: _difficulty,
+          palette: p,
+          level: level,
         ),
       ),
     );
@@ -276,24 +415,20 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _header(),
-          const SizedBox(height: 26),
-          _masthead(),
-          const SizedBox(height: 20),
-          _heroPreview(),
-          const SizedBox(height: 24),
+          const SizedBox(height: 22),
+          _levelHero(),
+          const SizedBox(height: 14),
           if (_rewardStatus?.canClaimToday == true) ...[
             _dailyRewardBanner(),
-            const SizedBox(height: 18),
+            const SizedBox(height: 14),
           ],
           _sectionHeader(L10n.t('home_select_difficulty')),
           _difficultySelector(),
-          const SizedBox(height: 26),
-          _continueButton(),
-          const SizedBox(height: 12),
-          _secondaryRow(),
-          const SizedBox(height: 30),
-          _footerStats(),
-          const SizedBox(height: 20),
+          const SizedBox(height: 22),
+          _modeCards(),
+          const SizedBox(height: 22),
+          _statChips(),
+          const SizedBox(height: 18),
           _themeRow(),
           const SizedBox(height: 10),
         ],
@@ -367,113 +502,310 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
       ),
     );
   }
+
   // ─────────────────────────────────────────
-  // MASTHEAD
+  // HERO: ادامه‌ی ماجرا
   // ─────────────────────────────────────────
 
-  Widget _masthead() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Container(width: 40, height: 1, color: p.accent.withOpacity(0.6)),
-        const SizedBox(height: 14),
-        Text(
-          L10n.t('app_name'),
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 46,
-            fontWeight: FontWeight.w300,
-            height: 1.1,
-            letterSpacing: _ls(2),
-            color: p.textPrimary,
-            fontStyle: _italic,
+  Widget _levelHero() {
+    final totalLevels = LevelsService.all.length;
+    final nextLevel = _nextLevelId(totalLevels);
+    final progress = totalLevels == 0
+        ? 0.0
+        : (_completedLevels / totalLevels).clamp(0.0, 1.0);
+    final allDone = _completedLevels >= totalLevels;
+
+    return FadeTransition(
+      opacity: _enterFade,
+      child: SlideTransition(
+        position: _enterSlide,
+        child: InkWell(
+          onTap: _openLevels,
+          borderRadius: BorderRadius.circular(28),
+          child: Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(28),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  p.accent.withOpacity(0.22),
+                  p.surface,
+                ],
+              ),
+              border: Border.all(color: p.accent.withOpacity(0.45)),
+              boxShadow: [
+                BoxShadow(
+                  color: p.accent.withOpacity(0.18),
+                  blurRadius: 26,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _upper(allDone
+                            ? L10n.t('home_done')
+                            : L10n.t('home_next_level')),
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1.5,
+                          color: p.accent,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      _animatedNumber(
+                        allDone ? L10n.t('home_all_done') : '$nextLevel',
+                      ),
+                      if (_showGain)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 2),
+                          child: Text(
+                            L10n.tf('home_gain_level', {'n': _gainedLevels}),
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
+                              color: p.accent,
+                            ),
+                          ),
+                        ),
+                      const SizedBox(height: 14),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(6),
+                        child: LinearProgressIndicator(
+                          value: progress,
+                          minHeight: 6,
+                          backgroundColor: p.border.withOpacity(0.5),
+                          valueColor: AlwaysStoppedAnimation(p.accent),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        L10n.tf('home_levels_progress', {
+                          'done': _completedLevels,
+                          'total': totalLevels,
+                        }),
+                        style: TextStyle(fontSize: 11, color: p.textMuted),
+                      ),
+                      const SizedBox(height: 12),
+                      _chapterDots(),
+                      const SizedBox(height: 14),
+                      _continueCta(),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 14),
+                SizedBox(width: 128, child: _boardTile()),
+              ],
+            ),
           ),
         ),
-        const SizedBox(height: 10),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(width: 20, height: 0.5, color: p.textMuted),
-            const SizedBox(width: 10),
-            Flexible(
-              child: Text(
-                _upper(L10n.t('app_tagline')),
+      ),
+    );
+  }
+
+  /// عدد بزرگ مرحله. عدد همیشه کامل دیده می‌شه؛ انیمیشن فقط جابه‌جایی کوچیکه.
+  Widget _animatedNumber(String text) {
+    final number = Text(
+      text,
+      style: TextStyle(
+        fontSize: 60,
+        fontWeight: FontWeight.w900,
+        height: 1.0,
+        color: p.textPrimary,
+      ),
+    );
+
+    if (!_animationsEnabled) return number;
+
+    return AnimatedBuilder(
+      animation: _numberAnim,
+      builder: (_, child) {
+        final t = Curves.easeOutCubic.transform(_numberAnim.value);
+        return Transform.translate(
+          offset: Offset(0, (1 - t) * 14),
+          child: child,
+        );
+      },
+      child: number,
+    );
+  }
+
+  Widget _continueCta() {
+    return InkWell(
+      onTap: _playNextLevel,
+      borderRadius: BorderRadius.circular(14),
+      child: AnimatedBuilder(
+        animation: _pulse,
+        builder: (_, child) => Transform.scale(
+          scale: 1.0 + _pulse.value * 0.03,
+          child: child,
+        ),
+        child: Container(
+          height: 48,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: p.accent,
+            borderRadius: BorderRadius.circular(14),
+            boxShadow: [
+              BoxShadow(
+                color: p.accent.withOpacity(0.4),
+                blurRadius: 14,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                L10n.t('home_continue'),
                 style: TextStyle(
-                  fontSize: 9,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: _ls(4),
-                  color: p.textMuted,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w900,
+                  color: p.bg,
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(width: 6),
+              Icon(Icons.play_arrow_rounded, color: p.bg, size: 20),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// اولین مرحله‌ای که هنوز تمام نشده
+  int _nextLevelId(int total) {
+    for (var i = 1; i <= total; i++) {
+      if (!_completedIds.contains(i)) return i;
+    }
+    return total;
+  }
+
+  /// فصلی که مرحله‌ی بعدی در آن قرار دارد
+  Chapter _currentChapter(int nextId) {
+    const chapters = LevelsService.chapters;
+    return chapters.firstWhere(
+      (c) => nextId >= c.startLevelId && nextId <= c.endLevelId,
+      orElse: () => chapters.last,
+    );
+  }
+
+  /// ردیف نقطه‌های مراحل فصل فعلی
+  Widget _chapterDots() {
+    final total = LevelsService.all.length;
+    final nextId = _nextLevelId(total);
+    final chapter = _currentChapter(nextId);
+    final ids = [
+      for (var i = chapter.startLevelId; i <= chapter.endLevelId; i++) i,
+    ];
+
+    return Row(
+      children: [
+        for (var k = 0; k < ids.length; k++) ...[
+          _levelDot(
+            id: ids[k],
+            done: _completedIds.contains(ids[k]),
+            isNext: ids[k] == nextId,
+          ),
+          if (k < ids.length - 1)
+            Expanded(
+              child: Container(
+                height: 2,
+                color: _completedIds.contains(ids[k])
+                    ? p.accent
+                    : p.border.withOpacity(0.6),
               ),
             ),
-            const SizedBox(width: 10),
-            Container(width: 20, height: 0.5, color: p.textMuted),
-          ],
-        ),
-        const SizedBox(height: 14),
-        Container(width: 40, height: 1, color: p.accent.withOpacity(0.6)),
+        ],
       ],
     );
   }
 
-  // ─────────────────────────────────────────
-  // HERO PREVIEW
-  // ─────────────────────────────────────────
+  Widget _levelDot({
+    required int id,
+    required bool done,
+    required bool isNext,
+  }) {
+    const double size = 8;
+    final dot = Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: done ? p.accent : Colors.transparent,
+        border: Border.all(
+          color: (done || isNext) ? p.accent : p.border,
+          width: 1.2,
+        ),
+      ),
+    );
 
-  Widget _heroPreview() {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final totalWidth = constraints.maxWidth;
-        const gap = 14.0;
-        final boardWidth = (totalWidth - gap) * 0.5;
-        return SizedBox(
-          height: 190,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              SizedBox(width: boardWidth, child: _boardPreview()),
-              const SizedBox(width: gap),
-              Expanded(child: _editionCard()),
-            ],
+    // نقطه‌ی تازه‌تمام‌شده: یک پالس کوتاه
+    if (id == _freshDoneId && _animationsEnabled) {
+      return SizedBox(
+        width: 14,
+        height: 14,
+        child: Center(
+          child: AnimatedBuilder(
+            animation: _dotPulse,
+            builder: (_, child) => Transform.scale(
+              scale: 1.0 + (1 - _dotPulse.value) * 0.5,
+              child: child,
+            ),
+            child: dot,
           ),
-        );
-      },
+        ),
+      );
+    }
+
+    if (!isNext) {
+      return SizedBox(width: 12, height: 12, child: Center(child: dot));
+    }
+
+    // مرحله‌ی بعدی: کمی بزرگ‌تر و با نبض آرام
+    return SizedBox(
+      width: 14,
+      height: 14,
+      child: Center(
+        child: AnimatedBuilder(
+          animation: _pulse,
+          builder: (_, child) => Transform.scale(
+            scale: 1.0 + _pulse.value * 0.35,
+            child: child,
+          ),
+          child: dot,
+        ),
+      ),
     );
   }
 
-  Widget _boardPreview() {
-    return Container(
-      decoration: BoxDecoration(
-        color: p.board,
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: p.border, width: 0.5),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(3),
+  /// تخته‌ی پیش‌نمایش: حتماً مربعی تا شبکه و مار درست کشیده بشن.
+  Widget _boardTile() {
+    return AspectRatio(
+      aspectRatio: 1,
+      child: Container(
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          color: p.board,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: p.border.withOpacity(0.6), width: 0.5),
+        ),
         child: AnimatedBuilder(
           animation: _boardPulse,
           builder: (_, __) => CustomPaint(
             painter: BoardPainter(
-              snake: const [
-                math.Point(2, 3),
-                math.Point(3, 3),
-                math.Point(4, 3),
-                math.Point(5, 3),
-                math.Point(5, 4),
-                math.Point(5, 5),
-                math.Point(4, 5),
-              ],
-              prevSnake: const [
-                math.Point(2, 3),
-                math.Point(3, 3),
-                math.Point(4, 3),
-                math.Point(5, 3),
-                math.Point(5, 4),
-                math.Point(5, 5),
-                math.Point(4, 5),
-              ],
+              snake: _previewSnake,
+              prevSnake: _previewSnake,
               moveProgress: 1.0,
               food: const math.Point(8, 2),
               dir: const math.Point(1, 0),
@@ -481,11 +813,11 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
               pulse: _boardPulse.value,
               cols: 10,
               rows: 10,
-              snakeSkin: _previewSnakeSkin, // ← جدید
-              foodSkin: _previewFoodSkin, // ← جدید
-              trail: _previewTrail, // ← جدید
-              pattern: _previewPattern, // ← جدید
-              patternIntensity: _previewIntensity, // ← جدید
+              snakeSkin: _previewSnakeSkin,
+              foodSkin: _previewFoodSkin,
+              trail: _previewTrail,
+              pattern: _previewPattern,
+              patternIntensity: _previewIntensity,
               ghostSkin: GhostSkin.basic,
               timePhase: _boardPulse.value,
               showGrid: true,
@@ -497,129 +829,6 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
     );
   }
 
-  Widget _editionCard() {
-    final level = PlayerProgressionService.levelFromXp(_playerXp);
-    final isMaxLevel = level >= PlayerProgressionService.maxLevel;
-    final xpInLevel =
-        isMaxLevel ? 0 : PlayerProgressionService.xpCurrent(_playerXp);
-    final xpToNext = isMaxLevel ? 0 : PlayerProgressionService.reqXP(level);
-
-    final totalLevels = LevelsService.all.length;
-    final remaining = (totalLevels - _completedLevels).clamp(0, totalLevels);
-    final levelsProgress =
-        totalLevels == 0 ? 0.0 : _completedLevels / totalLevels;
-
-    return Container(
-      decoration: BoxDecoration(
-        border: Border.all(color: p.border, width: 0.5),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      padding: const EdgeInsets.all(12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                _upper(L10n.t('menu_theme')),
-                style: TextStyle(
-                  fontSize: 8,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: _ls(3),
-                  color: p.textMuted,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                p.name,
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w900,
-                  color: p.accent,
-                  height: 1.1,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 4),
-              Container(width: 16, height: 1, color: p.accent),
-              const SizedBox(height: 12),
-              Text(
-                'Lv. $level',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: p.textPrimary,
-                  height: 1.1,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                isMaxLevel ? 'MAX' : '$xpInLevel / $xpToNext XP',
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w500,
-                  color: p.textMuted,
-                  height: 1.3,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                _upper(L10n.t('menu_levels')),
-                style: TextStyle(
-                  fontSize: 8,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: _ls(2),
-                  color: p.textMuted,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                '$_completedLevels / $totalLevels',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
-                  color: p.textPrimary,
-                  height: 1.1,
-                ),
-              ),
-              const SizedBox(height: 8),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(1.5),
-                child: LinearProgressIndicator(
-                  value: levelsProgress.clamp(0.0, 1.0),
-                  minHeight: 3,
-                  backgroundColor: p.border.withOpacity(0.4),
-                  valueColor: AlwaysStoppedAnimation(p.accent),
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                L10n.tf('home_levels_remaining', {'n': remaining}),
-                style: TextStyle(
-                  fontSize: 9,
-                  fontWeight: FontWeight.w500,
-                  color: p.textMuted,
-                  height: 1.3,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
   // ─────────────────────────────────────────
   // DAILY REWARD BANNER
   // ─────────────────────────────────────────
@@ -627,22 +836,21 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
   Widget _dailyRewardBanner() {
     return InkWell(
       onTap: _openDailyReward,
+      borderRadius: BorderRadius.circular(14),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          border: Border.all(
-            color: const Color(0xFFFFD700).withOpacity(0.4),
-            width: 0.5,
-          ),
-          borderRadius: BorderRadius.circular(4),
+          color: p.food.withOpacity(0.08),
+          border: Border.all(color: p.food.withOpacity(0.5), width: 0.5),
+          borderRadius: BorderRadius.circular(14),
         ),
         child: Row(
           children: [
             Container(
               width: 6,
               height: 6,
-              decoration: const BoxDecoration(
-                color: Color(0xFFFFD700),
+              decoration: BoxDecoration(
+                color: p.food,
                 shape: BoxShape.circle,
               ),
             ),
@@ -664,17 +872,16 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
                   Text(
                     L10n.tf('menu_daily_reward_sub',
                         {'n': _rewardStatus?.rewardAmount ?? 0}),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w500,
-                      color: Color(0xFFFFD700),
+                      color: p.food,
                     ),
                   ),
                 ],
               ),
             ),
-            Icon(Icons.arrow_forward_rounded,
-                color: const Color(0xFFFFD700), size: 16),
+            Icon(Icons.arrow_forward_rounded, color: p.food, size: 16),
           ],
         ),
       ),
@@ -687,7 +894,7 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
 
   Widget _sectionHeader(String label) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         children: [
           Container(width: 16, height: 0.5, color: p.textMuted),
@@ -711,137 +918,72 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
   }
 
   // ─────────────────────────────────────────
-  // DIFFICULTY
+  // DIFFICULTY (segmented)
   // ─────────────────────────────────────────
 
   Widget _difficultySelector() {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: Difficulty.values.asMap().entries.map((entry) {
-        final index = entry.key;
-        final d = entry.value;
-        final selected = d == _difficulty;
-        final isLast = index == Difficulty.values.length - 1;
-
-        return Expanded(
-          child: GestureDetector(
-            onTap: () => _selectDifficulty(d),
-            behavior: HitTestBehavior.opaque,
-            child: Padding(
-              padding: EdgeInsetsDirectional.only(
-                end: isLast ? 0 : 8,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        width: 10,
-                        height: 10,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: selected ? p.accent : Colors.transparent,
-                          border: Border.all(
-                            color: selected ? p.accent : p.border,
-                            width: 1.2,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Flexible(
-                        child: Text(
-                          _upper(d.label),
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: _ls(1.5),
-                            color: selected ? p.textPrimary : p.textMuted,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    d.subtitle,
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w400,
-                      color: p.textMuted,
-                      height: 1.3,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      }).toList(),
-    );
-  }
-
-  // ─────────────────────────────────────────
-  // CONTINUE (MAIN CTA)
-  // ─────────────────────────────────────────
-
-  Widget _continueButton() {
-    return InkWell(
-      onTap: _startFree,
-      splashColor: p.accent.withOpacity(0.08),
-      highlightColor: p.accent.withOpacity(0.03),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 18),
-        decoration: BoxDecoration(
-          color: p.accent.withOpacity(0.08),
-          border: Border.all(color: p.accent, width: 0.8),
-          borderRadius: BorderRadius.circular(4),
-        ),
-        child: Row(
-          children: [
-            Flexible(
-              child: Text(
-                L10n.t('menu_free_play'),
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: _ls(1),
-                  color: p.textPrimary,
-                  fontStyle: _italic,
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: p.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: p.border.withOpacity(0.6), width: 0.5),
+      ),
+      child: Row(
+        children: Difficulty.values.map((d) {
+          final selected = d == _difficulty;
+          return Expanded(
+            child: GestureDetector(
+              onTap: () => _selectDifficulty(d),
+              behavior: HitTestBehavior.opaque,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                height: 40,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: selected ? p.accent : Colors.transparent,
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+                child: Text(
+                  _upper(d.label),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: _ls(1.5),
+                    color: selected ? p.bg : p.textMuted,
+                  ),
+                ),
               ),
             ),
-            const Spacer(),
-            Icon(Icons.arrow_forward_rounded, color: p.accent, size: 20),
-          ],
-        ),
+          );
+        }).toList(),
       ),
     );
   }
 
   // ─────────────────────────────────────────
-  // SECONDARY
+  // MODE CARDS
   // ─────────────────────────────────────────
 
-  Widget _secondaryRow() {
+  Widget _modeCards() {
     return Row(
       children: [
         Expanded(
-          child: _secondaryButton(
-            label: L10n.t('menu_levels_btn'),
-            onTap: _openLevels,
+          child: _modeCard(
+            icon: Icons.all_inclusive_rounded,
+            title: L10n.t('menu_free_play'),
+            record: _best,
+            onTap: _startFree,
           ),
         ),
         const SizedBox(width: 10),
         Expanded(
-          child: _secondaryButton(
-            label: L10n.t('menu_timed_btn'),
+          child: _modeCard(
+            icon: Icons.timer_outlined,
+            title: L10n.t('menu_timed_btn'),
+            record: _timeAttackBest,
             onTap: _startTimeAttack,
           ),
         ),
@@ -849,110 +991,176 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
     );
   }
 
-  Widget _secondaryButton({
-    required String label,
+  Widget _modeCard({
+    required IconData icon,
+    required String title,
+    required int record,
     required VoidCallback onTap,
   }) {
     return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(18),
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 15),
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          border: Border.all(
-            color: p.border.withOpacity(0.7),
-            width: 0.5,
-          ),
-          borderRadius: BorderRadius.circular(4),
+          color: p.surface,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: p.border.withOpacity(0.6)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.12),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
-        child: Text(
-          _upper(label),
-          textAlign: TextAlign.center,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            fontSize: 10,
-            fontWeight: FontWeight.w700,
-            letterSpacing: _ls(2),
-            color: p.textPrimary,
-          ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: p.accent.withOpacity(0.15),
+              ),
+              child: Icon(icon, color: p.accent, size: 22),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              _upper(title),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+                letterSpacing: _ls(1),
+                color: p.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              '${L10n.t('menu_record')}: $record',
+              style: TextStyle(fontSize: 10, color: p.textMuted),
+            ),
+          ],
         ),
       ),
     );
   }
 
   // ─────────────────────────────────────────
-  // FOOTER STATS
+  // STAT CHIPS
   // ─────────────────────────────────────────
 
-  Widget _footerStats() {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      decoration: BoxDecoration(
-        border: Border(
-          top: BorderSide(color: p.border, width: 0.5),
-          bottom: BorderSide(color: p.border, width: 0.5),
-        ),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: _statColumn(
-              label: L10n.t('menu_record'),
-              value: '$_best',
-              align: CrossAxisAlignment.start,
-            ),
-          ),
-          Container(width: 0.5, height: 32, color: p.border),
-          Expanded(
-            child: _statColumn(
-              label: L10n.t('menu_levels'),
-              value: '$_completedLevels',
-              align: CrossAxisAlignment.center,
-            ),
-          ),
-          Container(width: 0.5, height: 32, color: p.border),
-          Expanded(
-            child: _statColumn(
-              label: L10n.t('menu_timed'),
-              value: '$_timeAttackBest',
-              align: CrossAxisAlignment.end,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  Widget _statChips() {
+    final level = PlayerProgressionService.levelFromXp(_playerXp);
+    final isMax = level >= PlayerProgressionService.maxLevel;
 
-  Widget _statColumn({
-    required String label,
-    required String value,
-    required CrossAxisAlignment align,
-  }) {
-    return Column(
-      crossAxisAlignment: align,
+    final inLevel = isMax ? 0 : PlayerProgressionService.xpCurrent(_playerXp);
+    final req = isMax ? 1 : math.max(1, PlayerProgressionService.reqXP(level));
+    final xpLeft = isMax ? 0 : req - inLevel;
+    final progress = isMax ? 1.0 : (inLevel / req).clamp(0.0, 1.0);
+
+    return Row(
       children: [
-        Text(
-          _upper(label),
-          style: TextStyle(
-            fontSize: 8,
-            fontWeight: FontWeight.w600,
-            letterSpacing: _ls(2),
-            color: p.textMuted,
+        Expanded(
+          child: _progressTile(
+            icon: Icons.emoji_events_outlined,
+            value: '$_best',
+            label: _upper(L10n.t('menu_record')),
           ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
         ),
-        const SizedBox(height: 6),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.w300,
-            color: p.textPrimary,
-            height: 1.15,
+        const SizedBox(width: 8),
+        Expanded(
+          child: _progressTile(
+            icon: Icons.stars_rounded,
+            value: '$_unlockedAchievements',
+            label: _upper(L10n.t('home_stat_achievements')),
+            onTap: _openAchievements,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _progressTile(
+            icon: Icons.trending_up_rounded,
+            value: isMax ? 'MAX' : '$xpLeft',
+            label: _upper(L10n.t('home_stat_xp_next')),
+            progress: progress,
           ),
         ),
       ],
+    );
+  }
+
+  Widget _progressTile({
+    required IconData icon,
+    required String value,
+    required String label,
+    VoidCallback? onTap,
+    double? progress,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        decoration: BoxDecoration(
+          color: p.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: p.border.withOpacity(0.6), width: 0.5),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 30,
+              height: 30,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: p.accent.withOpacity(0.15),
+              ),
+              child: Icon(icon, size: 16, color: p.accent),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: p.textPrimary,
+                height: 1.1,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 8,
+                fontWeight: FontWeight.w600,
+                letterSpacing: _ls(1.2),
+                color: p.textMuted,
+              ),
+            ),
+            if (progress != null) ...[
+              const SizedBox(height: 8),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(2),
+                child: LinearProgressIndicator(
+                  value: progress,
+                  minHeight: 3,
+                  backgroundColor: p.border.withOpacity(0.5),
+                  valueColor: AlwaysStoppedAnimation(p.accent),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 

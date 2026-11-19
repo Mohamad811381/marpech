@@ -762,6 +762,14 @@ const Map<String, Map<String, String>> translations = {
     'palette_light_mint_name': 'نعنایی',
     'palette_light_cream_name': 'کرم',
     'palette_light_slate_name': 'اسلیت',
+    'home_next_level': 'مرحله‌ی بعدی',
+    'home_continue': 'ادامه بده',
+    'home_done': 'تمام',
+    'home_all_done': 'افتخار!',
+    'home_levels_progress': '{done} از {total} مرحله',
+    'home_stat_achievements': 'دستاوردها',
+    'home_stat_xp_next': 'تا سطح بعد',
+        'home_gain_level': '+{n} مرحله',
   },
   'en': {
     // ---------- Common ----------
@@ -1524,5 +1532,13 @@ const Map<String, Map<String, String>> translations = {
     'palette_light_mint_name': 'Mint',
     'palette_light_cream_name': 'Cream',
     'palette_light_slate_name': 'Slate',
+    'home_next_level': 'Next Level',
+    'home_continue': 'Continue',
+    'home_done': 'Done',
+    'home_all_done': 'Legend!',
+    'home_levels_progress': '{done} of {total} levels',
+    'home_stat_achievements': 'Achievements',
+    'home_stat_xp_next': 'To next lvl',
+        'home_gain_level': '+{n} level',
   },
 };
