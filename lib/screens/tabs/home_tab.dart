@@ -995,147 +995,36 @@ class _HomeTabState extends State<HomeTab> with TickerProviderStateMixin {
     return Row(
       children: [
         Expanded(
-          child: _modeCard(
+          child: _ModeCard(
+            palette: p,
             lottieAsset: 'assets/lottie/free_play.json',
-            title: L10n.t('menu_free_play'),
-            tag: L10n.t('home_mode_endless'),
+            title: _upper(L10n.t('menu_free_play')),
+            tag: _upper(L10n.t('home_mode_endless')),
             record: _best,
+            recordLabel: _upper(L10n.t('menu_record')),
+            letterSpacing: _ls(1),
+            animationsEnabled: _animationsEnabled,
             onTap: _startFree,
           ),
         ),
         const SizedBox(width: 10),
         Expanded(
-          child: _modeCard(
+          child: _ModeCard(
+            palette: p,
             lottieAsset: 'assets/lottie/clock.json',
-            title: L10n.t('menu_timed_btn'),
-            tag: L10n.t('home_mode_60s'),
+            title: _upper(L10n.t('menu_timed_btn')),
+            tag: _upper(L10n.t('home_mode_60s')),
             record: _timeAttackBest,
+            recordLabel: _upper(L10n.t('menu_record')),
+            letterSpacing: _ls(1),
+            animationsEnabled: _animationsEnabled,
             onTap: _startTimeAttack,
           ),
         ),
       ],
     );
   }
-
-  Widget _modeCard({
-    required String lottieAsset,
-    required String title,
-    required String tag,
-    required int record,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(18),
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(18),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              p.accent.withOpacity(0.25),
-              p.surface,
-            ],
-          ),
-          border: Border.all(color: p.accent.withOpacity(0.45)),
-          boxShadow: [
-            BoxShadow(
-              color: p.accent.withOpacity(0.15),
-              blurRadius: 16,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 62,
-                  height: 62,
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white,
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  child: _animationsEnabled
-                      ? Lottie.asset(
-                          lottieAsset,
-                          repeat: true,
-                          fit: BoxFit.cover,
-                        )
-                      : Icon(Icons.play_arrow_rounded,
-                          color: p.accent, size: 32),
-                ),
-                const Spacer(),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
-                    color: p.accent.withOpacity(0.15),
-                  ),
-                  child: Text(
-                    _upper(tag),
-                    maxLines: 1,
-                    style: TextStyle(
-                      fontSize: 8,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: _ls(1),
-                      color: p.accent,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text(
-              _upper(title),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w800,
-                letterSpacing: _ls(1),
-                color: p.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  '$record',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w800,
-                    height: 1.0,
-                    color: p.textPrimary,
-                  ),
-                ),
-                const SizedBox(width: 6),
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 2),
-                  child: Text(
-                    _upper(L10n.t('menu_record')),
-                    style: TextStyle(
-                      fontSize: 8,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: _ls(1.2),
-                      color: p.textMuted,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  } // ─────────────────────────────────────────
+// ─────────────────────────────────────────
   // STAT CHIPS
   // ─────────────────────────────────────────
 
@@ -1302,16 +1191,10 @@ class _ProgressTileState extends State<_ProgressTile>
     );
   }
 
-  @override
-  void dispose() {
-    _lottieCtrl.dispose();
-    super.dispose();
-  }
-
-  Future<void> _handleTap() async {
+  Future<void> _handleIconTap() async {
     if (_playing) return;
 
-    // انیمیشن همیشه پخش می‌شه (حتی اگه onTap نداشته باشه)
+    // آیکون → اول انیمیشن، بعد ناوبری
     if (widget.lottieAsset != null && widget.animationsEnabled) {
       setState(() => _playing = true);
       try {
@@ -1322,8 +1205,23 @@ class _ProgressTileState extends State<_ProgressTile>
       if (!mounted) return;
     }
 
-    // ناوبری فقط اگه onTap داده شده باشه
     widget.onTap?.call();
+  }
+
+  void _handleBoxTap() {
+    // باکس → اگه مقصد داره، فوری برو
+    if (widget.onTap != null) {
+      widget.onTap!.call();
+    } else {
+      // کاشی XP که مقصد نداره → بازم انیمیشن پخش کن
+      _handleIconTap();
+    }
+  }
+
+  @override
+  void dispose() {
+    _lottieCtrl.dispose();
+    super.dispose();
   }
 
   @override
@@ -1331,7 +1229,7 @@ class _ProgressTileState extends State<_ProgressTile>
     final p = widget.palette;
 
     return InkWell(
-      onTap: _handleTap,
+      onTap: _handleBoxTap, // ← باکس → فوری می‌ره
       borderRadius: BorderRadius.circular(16),
       child: Container(
         clipBehavior: Clip.antiAlias,
@@ -1348,44 +1246,51 @@ class _ProgressTileState extends State<_ProgressTile>
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            SizedBox(
-              width: widget.iconSize,
-              height: widget.iconSize,
-              child: Stack(
-                alignment: Alignment.center,
-                clipBehavior: Clip.none,
-                children: [
-                  Container(
-                    width: widget.iconSize * 0.8,
-                    height: widget.iconSize * 0.8,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: p.accent.withOpacity(0.15),
-                    ),
-                  ),
-                  if (widget.lottieAsset != null)
-                    OverflowBox(
-                      maxWidth: widget.iconSize * 1.05,
-                      maxHeight: widget.iconSize * 1.05,
-                      child: Lottie.asset(
-                        widget.lottieAsset!,
-                        controller: _lottieCtrl,
-                        fit: BoxFit.contain,
-                        onLoaded: (comp) {
-                          _lottieCtrl.duration = comp.duration;
-                        },
+            // ── آیکون (GestureDetector جدا) ──
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: _handleIconTap, // ← آیکون → اول انیمیشن
+              child: SizedBox(
+                width: widget.iconSize,
+                height: widget.iconSize,
+                child: Stack(
+                  alignment: Alignment.center,
+                  clipBehavior: Clip.none,
+                  children: [
+                    Container(
+                      width: widget.iconSize * 0.8,
+                      height: widget.iconSize * 0.8,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: p.accent.withOpacity(0.15),
                       ),
-                    )
-                  else
-                    Icon(
-                      widget.icon,
-                      size: widget.iconSize * 0.45,
-                      color: p.accent,
                     ),
-                ],
+                    if (widget.lottieAsset != null)
+                      OverflowBox(
+                        maxWidth: widget.iconSize * 1.05,
+                        maxHeight: widget.iconSize * 1.05,
+                        child: Lottie.asset(
+                          widget.lottieAsset!,
+                          controller: _lottieCtrl,
+                          fit: BoxFit.contain,
+                          onLoaded: (comp) {
+                            _lottieCtrl.duration = comp.duration;
+                          },
+                        ),
+                      )
+                    else
+                      Icon(
+                        widget.icon,
+                        size: widget.iconSize * 0.45,
+                        color: p.accent,
+                      ),
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: 6),
+
+            // ── مقدار ──
             SizedBox(
               height: 22,
               child: FittedBox(
@@ -1404,6 +1309,8 @@ class _ProgressTileState extends State<_ProgressTile>
               ),
             ),
             const SizedBox(height: 2),
+
+            // ── برچسب ──
             SizedBox(
               height: 14,
               child: FittedBox(
@@ -1421,6 +1328,8 @@ class _ProgressTileState extends State<_ProgressTile>
                 ),
               ),
             ),
+
+            // ── نوار پیشرفت ──
             if (widget.progress != null) ...[
               const SizedBox(height: 6),
               ClipRRect(
@@ -1434,6 +1343,254 @@ class _ProgressTileState extends State<_ProgressTile>
               ),
             ],
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ModeCard extends StatefulWidget {
+  final GamePalette palette;
+  final String lottieAsset;
+  final String title;
+  final String tag;
+  final int record;
+  final String recordLabel;
+  final double letterSpacing;
+  final bool animationsEnabled;
+  final VoidCallback onTap;
+
+  const _ModeCard({
+    required this.palette,
+    required this.lottieAsset,
+    required this.title,
+    required this.tag,
+    required this.record,
+    required this.recordLabel,
+    required this.letterSpacing,
+    required this.animationsEnabled,
+    required this.onTap,
+  });
+
+  @override
+  State<_ModeCard> createState() => _ModeCardState();
+}
+
+class _ModeCardState extends State<_ModeCard>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _lottieCtrl;
+  bool _playing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _lottieCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+  }
+
+  @override
+  void dispose() {
+    _lottieCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleIconTap() async {
+    if (_playing) return;
+
+    if (widget.animationsEnabled) {
+      setState(() => _playing = true);
+      try {
+        await _lottieCtrl.forward(from: 0);
+      } finally {
+        if (mounted) setState(() => _playing = false);
+      }
+      if (!mounted) return;
+    }
+
+    widget.onTap();
+  }
+
+  void _handleBoxTap() => widget.onTap();
+
+  @override
+  Widget build(BuildContext context) {
+    final p = widget.palette;
+
+    return InkWell(
+      onTap: _handleBoxTap,
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        clipBehavior: Clip.antiAlias,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              p.accent.withOpacity(0.25),
+              p.surface,
+            ],
+          ),
+          border: Border.all(color: p.accent.withOpacity(0.45)),
+          boxShadow: [
+            BoxShadow(
+              color: p.accent.withOpacity(0.15),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final iconSize =
+                (constraints.maxWidth * 0.5).roundToDouble().clamp(48.0, 68.0);
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: _handleIconTap,
+                      child: SizedBox(
+                        width: iconSize,
+                        height: iconSize,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          clipBehavior: Clip.none,
+                          children: [
+                            Container(
+                              width: iconSize * 0.8,
+                              height: iconSize * 0.8,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: p.accent.withOpacity(0.15),
+                              ),
+                            ),
+                            if (widget.animationsEnabled)
+                              OverflowBox(
+                                maxWidth: iconSize * 1.05,
+                                maxHeight: iconSize * 1.05,
+                                child: Lottie.asset(
+                                  widget.lottieAsset,
+                                  controller: _lottieCtrl,
+                                  fit: BoxFit.contain,
+                                  onLoaded: (comp) {
+                                    // ⚡ سریع‌تر از حالت عادی
+                                    _lottieCtrl.duration = comp.duration * 0.7;
+                                  },
+                                ),
+                              )
+                            else
+                              Icon(
+                                Icons.play_arrow_rounded,
+                                color: p.accent,
+                                size: iconSize * 0.45,
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Align(
+                        alignment: AlignmentDirectional.topEnd,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(8),
+                            color: p.accent.withOpacity(0.15),
+                          ),
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              widget.tag,
+                              maxLines: 1,
+                              style: TextStyle(
+                                fontSize: 8,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: widget.letterSpacing,
+                                color: p.accent,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  height: 18,
+                  width: double.infinity,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: AlignmentDirectional.centerStart,
+                    child: Text(
+                      widget.title,
+                      maxLines: 1,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: widget.letterSpacing,
+                        color: p.textPrimary,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Flexible(
+                      child: SizedBox(
+                        height: 24,
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: AlignmentDirectional.centerStart,
+                          child: Text(
+                            '${widget.record}',
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w800,
+                              height: 1.0,
+                              color: p.textPrimary,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 2),
+                      child: SizedBox(
+                        height: 12,
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            widget.recordLabel,
+                            style: TextStyle(
+                              fontSize: 8,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: widget.letterSpacing * 1.2,
+                              color: p.textMuted,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            );
+          },
         ),
       ),
     );
