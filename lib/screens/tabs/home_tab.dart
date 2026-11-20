@@ -2,7 +2,9 @@
 
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart';
 import 'package:marpech/models/chapter.dart';
+import 'package:marpech/screens/missions_screen.dart';
 import 'package:marpech/services/performance_service.dart';
 import 'package:marpech/services/theme_service.dart';
 import '../../models/difficulty.dart';
@@ -23,6 +25,7 @@ import '../../models/skins.dart';
 import '../../models/board_pattern.dart';
 import '../../services/achievements_service.dart';
 import '../achievements_screen.dart';
+import '../../services/missions_service.dart';
 
 class HomeTab extends StatefulWidget {
   final GamePalette palette;
@@ -51,6 +54,8 @@ class _HomeTabState extends State<HomeTab> with TickerProviderStateMixin {
   DailyRewardStatus? _rewardStatus;
   int _playerXp = 0;
   int _unlockedAchievements = 0;
+  int _claimableMissions = 0;
+  double _missionsRatio = 0;
 
   // 🎞️ مقایسه‌ی قبل و بعد از بازی
   int _prevCompletedLevels = 0;
@@ -182,6 +187,12 @@ class _HomeTabState extends State<HomeTab> with TickerProviderStateMixin {
     final diff = Difficulty.values[d.clamp(0, Difficulty.values.length - 1)];
     final b = await StorageService.getBestScore(diff);
     final unlockedAch = await AchievementsService.unlockedCount();
+    final claimableMissions = await MissionsService.claimableCount();
+    final allMissions = await MissionsService.getAllProgress();
+    final missionsRatio = allMissions.isEmpty
+        ? 0.0
+        : allMissions.map((m) => m.ratio).reduce((a, b) => a + b) /
+            allMissions.length;
     if (!mounted) return;
     setState(() {
       _difficulty = diff;
@@ -193,6 +204,8 @@ class _HomeTabState extends State<HomeTab> with TickerProviderStateMixin {
       _rewardStatus = results[4] as DailyRewardStatus;
       _playerXp = results[5] as int;
       _unlockedAchievements = unlockedAch;
+      _claimableMissions = claimableMissions;
+      _missionsRatio = missionsRatio;
       _previewSnakeSkin = SnakeSkin.fromId(results[6] as String);
       _previewFoodSkin = FoodSkin.fromId(results[7] as String);
       _previewTrail = TrailEffect.fromId(results[8] as String);
@@ -323,6 +336,18 @@ class _HomeTabState extends State<HomeTab> with TickerProviderStateMixin {
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => AchievementsScreen(palette: p),
+      ),
+    );
+    if (!mounted) return;
+    await _load();
+  }
+
+  Future<void> _openMissions() async {
+    await _audio.playSfx(Sfx.button);
+    if (!mounted) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => MissionsScreen(palette: p),
       ),
     );
     if (!mounted) return;
@@ -966,14 +991,14 @@ class _HomeTabState extends State<HomeTab> with TickerProviderStateMixin {
   // ─────────────────────────────────────────
   // MODE CARDS
   // ─────────────────────────────────────────
-
   Widget _modeCards() {
     return Row(
       children: [
         Expanded(
           child: _modeCard(
-            icon: Icons.all_inclusive_rounded,
+            lottieAsset: 'assets/lottie/free_play.json',
             title: L10n.t('menu_free_play'),
+            tag: L10n.t('home_mode_endless'),
             record: _best,
             onTap: _startFree,
           ),
@@ -981,8 +1006,9 @@ class _HomeTabState extends State<HomeTab> with TickerProviderStateMixin {
         const SizedBox(width: 10),
         Expanded(
           child: _modeCard(
-            icon: Icons.timer_outlined,
+            lottieAsset: 'assets/lottie/clock.json',
             title: L10n.t('menu_timed_btn'),
+            tag: L10n.t('home_mode_60s'),
             record: _timeAttackBest,
             onTap: _startTimeAttack,
           ),
@@ -992,8 +1018,9 @@ class _HomeTabState extends State<HomeTab> with TickerProviderStateMixin {
   }
 
   Widget _modeCard({
-    required IconData icon,
+    required String lottieAsset,
     required String title,
+    required String tag,
     required int record,
     required VoidCallback onTap,
   }) {
@@ -1003,28 +1030,66 @@ class _HomeTabState extends State<HomeTab> with TickerProviderStateMixin {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: p.surface,
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: p.border.withOpacity(0.6)),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              p.accent.withOpacity(0.25),
+              p.surface,
+            ],
+          ),
+          border: Border.all(color: p.accent.withOpacity(0.45)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.12),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
+              color: p.accent.withOpacity(0.15),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
             ),
           ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: p.accent.withOpacity(0.15),
-              ),
-              child: Icon(icon, color: p.accent, size: 22),
+            Row(
+              children: [
+                Container(
+                  width: 62,
+                  height: 62,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white,
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: _animationsEnabled
+                      ? Lottie.asset(
+                          lottieAsset,
+                          repeat: true,
+                          fit: BoxFit.cover,
+                        )
+                      : Icon(Icons.play_arrow_rounded,
+                          color: p.accent, size: 32),
+                ),
+                const Spacer(),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    color: p.accent.withOpacity(0.15),
+                  ),
+                  child: Text(
+                    _upper(tag),
+                    maxLines: 1,
+                    style: TextStyle(
+                      fontSize: 8,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: _ls(1),
+                      color: p.accent,
+                    ),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 12),
             Text(
@@ -1038,18 +1103,39 @@ class _HomeTabState extends State<HomeTab> with TickerProviderStateMixin {
                 color: p.textPrimary,
               ),
             ),
-            const SizedBox(height: 2),
-            Text(
-              '${L10n.t('menu_record')}: $record',
-              style: TextStyle(fontSize: 10, color: p.textMuted),
+            const SizedBox(height: 6),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  '$record',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    height: 1.0,
+                    color: p.textPrimary,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 2),
+                  child: Text(
+                    _upper(L10n.t('menu_record')),
+                    style: TextStyle(
+                      fontSize: 8,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: _ls(1.2),
+                      color: p.textMuted,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
       ),
     );
-  }
-
-  // ─────────────────────────────────────────
+  } // ─────────────────────────────────────────
   // STAT CHIPS
   // ─────────────────────────────────────────
 
@@ -1066,9 +1152,14 @@ class _HomeTabState extends State<HomeTab> with TickerProviderStateMixin {
       children: [
         Expanded(
           child: _progressTile(
-            icon: Icons.emoji_events_outlined,
-            value: '$_best',
-            label: _upper(L10n.t('menu_record')),
+            icon: Icons.flag_outlined,
+            value: '${(_missionsRatio * 100).round()}%',
+            label: _upper(_claimableMissions > 0
+                ? L10n.t('home_stat_ready')
+                : L10n.t('home_stat_missions')),
+            onTap: _openMissions,
+            progress: _missionsRatio,
+            highlight: _claimableMissions > 0,
           ),
         ),
         const SizedBox(width: 8),
@@ -1099,6 +1190,7 @@ class _HomeTabState extends State<HomeTab> with TickerProviderStateMixin {
     required String label,
     VoidCallback? onTap,
     double? progress,
+    bool highlight = false,
   }) {
     return InkWell(
       onTap: onTap,
@@ -1108,7 +1200,10 @@ class _HomeTabState extends State<HomeTab> with TickerProviderStateMixin {
         decoration: BoxDecoration(
           color: p.surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: p.border.withOpacity(0.6), width: 0.5),
+          border: Border.all(
+            color: highlight ? p.accent : p.border.withOpacity(0.6),
+            width: highlight ? 1.2 : 0.5,
+          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

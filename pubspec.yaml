@@ -1,7 +1,7 @@
 name: marpech
 description: بازی مار با طراحی نئونی — برای اندروید، iOS، وب و ویندوز
 publish_to: 'none'
-version: 1.0.6+75
+version: 1.0.6+85
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -15,6 +15,7 @@ dependencies:
   material_ui: ^1.11.0
   package_info_plus: ^10.2.2
   vibration: ^3.2.1
+  lottie: ^3.8.2
 
 dev_dependencies:
   flutter_test:
@@ -39,3 +40,4 @@ flutter:
   uses-material-design: true
   assets:
     - assets/audio/
+    - assets/lottie/    

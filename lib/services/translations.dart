@@ -770,6 +770,10 @@ const Map<String, Map<String, String>> translations = {
     'home_stat_achievements': 'دستاوردها',
     'home_stat_xp_next': 'تا سطح بعد',
         'home_gain_level': '+{n} مرحله',
+            'home_stat_missions': 'ماموریت‌ها',
+                'home_stat_ready': 'آماده!',
+                    'home_mode_endless': 'بی‌نهایت',
+    'home_mode_60s': '۶۰ ثانیه',
   },
   'en': {
     // ---------- Common ----------
@@ -1540,5 +1544,9 @@ const Map<String, Map<String, String>> translations = {
     'home_stat_achievements': 'Achievements',
     'home_stat_xp_next': 'To next lvl',
         'home_gain_level': '+{n} level',
+            'home_stat_missions': 'Missions',
+                'home_stat_ready': 'Ready!',
+                    'home_mode_endless': 'Endless',
+    'home_mode_60s': '60 seconds',
   },
 };
