@@ -17,7 +17,15 @@
        new_record.mp3
     icon
        icon.png
-    icon.png
+    icons
+       star.svg
+    lottie
+        achievement.json
+        clock.json
+        free_play.json
+        mission.json
+        star.json
+        trending.json
  lib
     models
        achievement.dart
