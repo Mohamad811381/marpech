@@ -147,6 +147,7 @@ class _GameScreenState extends State<GameScreen>
   bool _gameXpCommitted = false;
   bool _levelXpCommitted = false;
   bool _winInProgress = false;
+  bool _ready = false;
 
   DateTime? _slowUntil;
   int _slowRemaining = 0;
@@ -514,7 +515,8 @@ class _GameScreenState extends State<GameScreen>
     _audio.startMusic();
     _isIntroPlaying = false;
     _introAnim.reset();
-    if (!_pulse.isAnimating) _pulse.repeat(); // ← اضافه
+    if (!_pulse.isAnimating) _pulse.repeat();
+    _ready = true; // ← اضافه
     setState(() {});
 
     if (_introAnimation != IntroAnimation.none) {

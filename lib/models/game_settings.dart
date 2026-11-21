@@ -51,7 +51,7 @@ class GameSettings {
     this.rainbow = false,
     this.screenShake = true,
     this.wrapEffect = true,
-    this.showGhost = true,
+    this.showGhost = false,
     this.dpadSize = DPadSize.medium,
     this.controlType = ControlType.dpad, // ← پیش‌فرض
   });

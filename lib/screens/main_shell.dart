@@ -17,6 +17,7 @@ import 'tabs/home_tab.dart';
 import 'tabs/progress_tab.dart';
 import 'tabs/daily_tab.dart';
 import 'tabs/shop_tab.dart';
+import '../widgets/app_bottom_nav.dart';
 
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
@@ -188,7 +189,11 @@ class _MainShellState extends State<MainShell> {
           bottom: false,
           child: _buildBody(),
         ),
-        bottomNavigationBar: _buildBottomNav(),
+        bottomNavigationBar: AppBottomNav(
+          palette: _palette,
+          currentIndex: _currentIndex,
+          onChanged: (i) => setState(() => _currentIndex = i),
+        ),
       ),
     );
   }
@@ -220,43 +225,6 @@ class _MainShellState extends State<MainShell> {
         );
     }
   }
-
-  Widget _buildBottomNav() {
-    return NavigationBar(
-      selectedIndex: _currentIndex,
-      onDestinationSelected: (i) => setState(() => _currentIndex = i),
-      backgroundColor: _palette.surface,
-      indicatorColor: _palette.accent.withOpacity(0.20),
-      surfaceTintColor: Colors.transparent,
-      labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-      height: 68,
-      destinations: [
-        NavigationDestination(
-          icon: Icon(Icons.home_outlined, color: _palette.textMuted),
-          selectedIcon: Icon(Icons.home_rounded, color: _palette.accent),
-          label: L10n.t('nav_home'),
-        ),
-        NavigationDestination(
-          icon: Icon(Icons.track_changes_outlined, color: _palette.textMuted),
-          selectedIcon:
-              Icon(Icons.track_changes_rounded, color: _palette.accent),
-          label: L10n.t('nav_progress'),
-        ),
-        NavigationDestination(
-          icon: Icon(Icons.card_giftcard_outlined, color: _palette.textMuted),
-          selectedIcon:
-              Icon(Icons.card_giftcard_rounded, color: _palette.accent),
-          label: L10n.t('nav_daily'),
-        ),
-        NavigationDestination(
-          icon: Icon(Icons.storefront_outlined, color: _palette.textMuted),
-          selectedIcon: Icon(Icons.storefront_rounded, color: _palette.accent),
-          label: L10n.t('nav_shop'),
-        ),
-      ],
-    );
-  }
-
   // ══════════════════════════════════════════════════════════════
   // Stage 4: Level-up dialog coordinator
   // ══════════════════════════════════════════════════════════════

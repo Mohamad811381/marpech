@@ -388,7 +388,7 @@ class _StatsScreenState extends State<StatsScreen> {
           ),
           const SizedBox(height: 18),
           SizedBox(
-            height: 140,
+            height: 170,
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,

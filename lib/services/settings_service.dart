@@ -30,7 +30,7 @@ class SettingsService {
       rainbow: p.getBool(_kRainbow) ?? true,
       screenShake: p.getBool(_kShake) ?? true,
       wrapEffect: p.getBool(_kWrap) ?? true,
-      showGhost: p.getBool(_kGhost) ?? true,
+      showGhost: p.getBool(_kGhost) ?? false,
       dpadSize: DPadSize
           .values[(p.getInt(_kDpad) ?? 1).clamp(0, DPadSize.values.length - 1)],
       controlType: ControlType.values[(p.getInt(_kControlType) ?? 0)

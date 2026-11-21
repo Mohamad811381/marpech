@@ -14,6 +14,7 @@ enum BoardPattern {
   crystal('crystal'),
   petals('petals'),
   legendPattern('legend_pattern');
+  
 
   final String id;
   const BoardPattern(this.id);

@@ -1,7 +1,7 @@
 name: marpech
 description: بازی مار با طراحی نئونی — برای اندروید، iOS، وب و ویندوز
 publish_to: 'none'
-version: 1.0.6+103
+version: 1.0.6+110
 
 environment:
   sdk: '>=3.0.0 <4.0.0'

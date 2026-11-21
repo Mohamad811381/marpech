@@ -3,10 +3,6 @@
 part of '../game_screen.dart';
 
 extension _GameBoardView on _GameScreenState {
-
-
-
-
   Widget _header() {
     return Column(
       children: [
@@ -71,6 +67,9 @@ extension _GameBoardView on _GameScreenState {
   }
 
   Widget _board(GameSettings settings) {
+    if (!_ready) {
+      return const AspectRatio(aspectRatio: 1, child: SizedBox.shrink());
+    }
     final animations = <Listenable>[_pulse, _moveAnim];
     // _rainbow animation دیگه لازم نیست (اسکین رنگین‌کمان از _pulse استفاده می‌کنه)
     if (settings.wrapEffect) animations.add(_wrapAnim);
@@ -324,8 +323,4 @@ extension _GameBoardView on _GameScreenState {
       ),
     );
   }
-
-
-
-
 }
