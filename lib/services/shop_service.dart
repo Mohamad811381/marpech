@@ -254,7 +254,11 @@ final List<ShopItem> allShopItems = [
       type: ShopItemType.foodSkin,
       price: 180,
       icon: Icons.water_drop_rounded),
-
+  const ShopItem(
+      id: 'fire',
+      type: ShopItemType.foodSkin,
+      price: 200,
+      icon: Icons.local_fire_department_rounded),
   // ✨ Trail effects
   const ShopItem(
       id: 'neon',

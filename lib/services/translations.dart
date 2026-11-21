@@ -423,6 +423,8 @@ const Map<String, Map<String, String>> translations = {
     'skin_food_cherry_desc': 'دو گیلاس قرمز',
     'skin_food_watermelon_name': 'هندوانه',
     'skin_food_watermelon_desc': 'برش هندوانه',
+    'skin_food_fire_name': 'آتش',
+    'skin_food_fire_desc': 'شعله‌ی زنده‌ی آتش',
 
     // انتخاب در تنظیمات
     'settings_section_skins': 'اسکین‌ها',
@@ -769,10 +771,10 @@ const Map<String, Map<String, String>> translations = {
     'home_levels_progress': '{done} از {total} مرحله',
     'home_stat_achievements': 'دستاوردها',
     'home_stat_xp_next': 'تا سطح بعد',
-        'home_gain_level': '+{n} مرحله',
-            'home_stat_missions': 'ماموریت‌ها',
-                'home_stat_ready': 'آماده!',
-                    'home_mode_endless': 'بی‌نهایت',
+    'home_gain_level': '+{n} مرحله',
+    'home_stat_missions': 'ماموریت‌ها',
+    'home_stat_ready': 'آماده!',
+    'home_mode_endless': 'بی‌نهایت',
     'home_mode_60s': '۶۰ ثانیه',
   },
   'en': {
@@ -1198,6 +1200,8 @@ const Map<String, Map<String, String>> translations = {
     'skin_food_cherry_desc': 'Two red cherries',
     'skin_food_watermelon_name': 'Watermelon',
     'skin_food_watermelon_desc': 'Watermelon slice',
+    'skin_food_fire_name': 'Fire',
+    'skin_food_fire_desc': 'A living flame',
 
     // Settings skins
     'settings_section_skins': 'Skins',
@@ -1543,10 +1547,10 @@ const Map<String, Map<String, String>> translations = {
     'home_levels_progress': '{done} of {total} levels',
     'home_stat_achievements': 'Achievements',
     'home_stat_xp_next': 'To next lvl',
-        'home_gain_level': '+{n} level',
-            'home_stat_missions': 'Missions',
-                'home_stat_ready': 'Ready!',
-                    'home_mode_endless': 'Endless',
+    'home_gain_level': '+{n} level',
+    'home_stat_missions': 'Missions',
+    'home_stat_ready': 'Ready!',
+    'home_mode_endless': 'Endless',
     'home_mode_60s': '60 seconds',
   },
 };

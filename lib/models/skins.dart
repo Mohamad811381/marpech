@@ -56,6 +56,7 @@ enum FoodSkin {
   star('star'),
   cherry('cherry'),
   watermelon('watermelon'),
+    fire('fire'),
   goldenTrophyFood('golden_trophy_food');
   final String id;
   const FoodSkin(this.id);

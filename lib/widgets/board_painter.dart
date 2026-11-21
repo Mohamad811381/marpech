@@ -105,6 +105,8 @@ class BoardPainter extends CustomPainter {
         return const Color(0xFF4CAF50);
       case FoodSkin.goldenTrophyFood:
         return const Color(0xFFFFD700);
+      case FoodSkin.fire:
+        return const Color(0xFFFF6D00);
     }
   }
 
@@ -948,7 +950,119 @@ class BoardPainter extends CustomPainter {
           stem,
         );
         break;
+      case FoodSkin.fire:
+        final t = pulse * 2 * pi;
 
+        // لرزش نامنظم برای ظاهر خشن
+        final flicker = 1.0 + 0.10 * sin(t * 3.7) + 0.05 * sin(t * 8.3 + 1.2);
+        final breathe = flicker;
+
+        // حرکت کائوتیک شعله
+        final chaosX = sin(t * 1.3) * 0.6 + sin(t * 4.7) * 0.4;
+
+        // ---- هاله گلو (Glow) پشت شعله ----
+        final glowPaint = Paint()
+          ..shader = RadialGradient(
+            colors: [
+              const Color(0xFFFF6D00).withOpacity(0.40 * breathe),
+              const Color(0xFFFF3D00).withOpacity(0.0),
+            ],
+          ).createShader(Rect.fromCircle(
+              center: c.translate(0, -r * 0.3), radius: r * 2.6));
+        canvas.drawCircle(c.translate(0, -r * 0.3), r * 2.6, glowPaint);
+
+        Path flame(double s, double sway, double lift, double jag) {
+          final bx = c.dx;
+          final by = c.dy + r * 1.0 - r * lift;
+          final h = r * 2.6 * s * breathe;
+          final w = r * 1.0 * s;
+
+          final tipX = bx + sway * r * 0.55 * s + chaosX * r * 0.15 * s;
+          final tipY = by - h;
+
+          // دندانه‌های کناری
+          final leftJag = bx - w * 1.35 - sin(t * 6.1 + s) * r * 0.10 * jag;
+          final rightJag = bx + w * 1.35 + cos(t * 5.7 + s) * r * 0.10 * jag;
+
+          return Path()
+            ..moveTo(bx, by)
+            // سمت چپ
+            ..cubicTo(bx - w * 1.55, by - h * 0.05, leftJag, by - h * 0.40,
+                bx - w * 0.50, by - h * 0.66)
+            // دندانه وسط چپ
+            ..lineTo(
+                bx - w * 0.68 + sin(t * 9.0) * r * 0.06 * jag, by - h * 0.72)
+            // به سمت نوک
+            ..cubicTo(bx - w * 0.22, by - h * 0.85, tipX - w * 0.15,
+                by - h * 0.92, tipX, tipY)
+            // سمت راست از نوک
+            ..cubicTo(tipX + w * 0.20, by - h * 0.88, bx + w * 0.70,
+                by - h * 0.70, rightJag, by - h * 0.50)
+            // پایین راست
+            ..cubicTo(bx + w * 1.20, by - h * 0.22, bx + w * 1.18,
+                by - h * 0.01, bx, by)
+            ..close();
+        }
+
+        // ---- لایه‌های شعله از بیرون به داخل ----
+        // قرمز تیره (بیرونی)
+        canvas.drawPath(flame(1.18, chaosX * 1.1, 0.00, 1.2),
+            Paint()..color = const Color(0xFFB71C1C).withOpacity(0.92));
+        // قرمز
+        canvas.drawPath(flame(1.00, chaosX * 1.2, 0.00, 1.1),
+            Paint()..color = const Color(0xFFFF1744));
+        // نارنجی تیره
+        canvas.drawPath(flame(0.82, sin(t * 1.5) * 0.85, 0.06, 1.0),
+            Paint()..color = const Color(0xFFFF6D00));
+        // نارنجی
+        canvas.drawPath(flame(0.62, sin(t + 1.5) * 0.70, 0.12, 0.8),
+            Paint()..color = const Color(0xFFFF9100));
+        // زرد
+        canvas.drawPath(flame(0.42, sin(t + 3.0) * 0.50, 0.18, 0.6),
+            Paint()..color = const Color(0xFFFFEA00));
+        // هسته سفید داغ
+        canvas.drawPath(flame(0.22, sin(t + 4.2) * 0.30, 0.26, 0.4),
+            Paint()..color = const Color(0xFFFFFFF0).withOpacity(0.90));
+
+        // ---- جرقه‌های دنباله‌دار ----
+        for (var i = 0; i < 6; i++) {
+          final ph = (pulse * 0.85 + i * 0.17) % 1.0;
+          final angle = (i * 2.4) + t * 0.5;
+          final spread = r * (0.30 + ph * 0.9);
+          final sparkX =
+              c.dx + cos(angle) * spread * 0.65 + sin(t * 3 + i) * r * 0.15;
+          final sparkY = c.dy - r * 0.25 - ph * r * 1.9;
+          final op = (1 - ph).clamp(0.0, 1.0);
+          final size = r * 0.10 * (1 - ph);
+
+          // دنباله جرقه
+          canvas.drawLine(
+            Offset(sparkX, sparkY),
+            Offset(sparkX + cos(angle) * size * 1.5, sparkY + size * 3.5),
+            Paint()
+              ..color = const Color(0xFFFFAA00).withOpacity(op * 0.45)
+              ..strokeWidth = size * 1.2
+              ..strokeCap = StrokeCap.round,
+          );
+
+          // بدنه جرقه (رنگ بین زرد و قرمز بر اساس ارتفاع)
+          canvas.drawCircle(
+            Offset(sparkX, sparkY),
+            size,
+            Paint()
+              ..color = Color.lerp(
+                      const Color(0xFFFFEA00), const Color(0xFFFF3D00), ph)!
+                  .withOpacity(op),
+          );
+
+          // مغز درخشان جرقه
+          canvas.drawCircle(
+            Offset(sparkX, sparkY),
+            size * 0.45,
+            Paint()..color = Colors.white.withOpacity(op * 0.85),
+          );
+        }
+        break;
       case FoodSkin.watermelon:
         canvas.drawArc(
           Rect.fromCircle(center: c, radius: r * 0.95),
