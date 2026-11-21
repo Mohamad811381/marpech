@@ -48,10 +48,31 @@
        skins.dart
     screens
        game
+          game_board_view.dart
+          game_effects_logic.dart
+          game_end_logic.dart
           game_hud.dart
+          game_input_logic.dart
           game_overlays.dart
+          game_respawn_logic.dart
+          game_route_logic.dart
           game_shake_wrapper.dart
+          game_xp_logic.dart
        tabs
+          home
+             widgets
+                board_preview.dart
+                chapter_dots.dart
+                daily_reward_banner.dart
+                difficulty_selector.dart
+                home_header.dart
+                level_hero.dart
+                mode_card.dart
+                progress_tile.dart
+                section_header.dart
+                stat_chips.dart
+                theme_row.dart
+             home_helpers.dart
           daily_tab.dart
           home_tab.dart
           progress_tab.dart

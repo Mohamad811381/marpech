@@ -15,7 +15,6 @@ class Level {
   final Duration? timeLimit;
   final Duration tick;
 
-
   /// 🔁 عبور از لبه — برای فصل ۴ غیرفعاله
   final bool wrapEnabled;
 
@@ -29,8 +28,7 @@ class Level {
     this.snakeDir = const Point(0, -1),
     this.timeLimit,
     this.wrapEnabled = true,
-      this.tick = const Duration(milliseconds: 140),
-
+    this.tick = const Duration(milliseconds: 140),
   });
 
   String get name => L10n.t('level_${id}_name');
@@ -38,4 +36,3 @@ class Level {
   /// آیا این مرحله زمان‌داره؟
   bool get isTimed => timeLimit != null;
 }
-

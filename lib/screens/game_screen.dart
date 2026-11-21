@@ -254,7 +254,7 @@ class _GameScreenState extends State<GameScreen>
     if (id <= 10) return 1.0; // 🟢 فصل ۱
     if (id <= 20) return 1.15; // 🟡 فصل ۲
     if (id <= 30) return 1.30; // 🟣 فصل ۳
-    return 1.40; // 🔴 فصل ۴
+    return 1.20; // 🔴 فصل ۴
   }
 
   Duration _baseTick() {

@@ -734,44 +734,49 @@ class LevelsService {
       ),
 
       // ۳۵. صلیب — دیوارهای عمودی + افقی با شکاف
+      // ۳۵. صلیب — دیوارهای عمودی + افقی با شکاف (نسخه آسان‌تر)
       Level(
         id: 35,
         emoji: '➕',
         targetFoods: 10,
+        timeLimit: const Duration(seconds: 150),
+        wrapEnabled: false,
+        tick: const Duration(milliseconds: 160),
+        walls: {
+          ..._border(),
+          // دیوار عمودی x=6 با ۴ شکاف
+          for (var y = 2; y <= 17; y++)
+            if (y != 4 && y != 9 && y != 10 && y != 15) Point(6, y),
+          // دیوار عمودی x=13 با ۴ شکاف
+          for (var y = 2; y <= 17; y++)
+            if (y != 4 && y != 9 && y != 10 && y != 15) Point(13, y),
+          // دیوار افقی y=3 با شکاف بزرگ‌تر در وسط
+          for (var x = 2; x <= 17; x++)
+            if (x < 8 || x > 11) Point(x, 3),
+          // دیوار افقی y=16 با شکاف بزرگ‌تر در وسط
+          for (var x = 2; x <= 17; x++)
+            if (x < 8 || x > 11) Point(x, 16),
+        },
+      ),
+
+      // ۳۶. زیگزاگ — مار از غرب شروع می‌کنه، شکاف‌های متناوب چپ-راست-چپ
+      Level(
+        id: 36,
+        emoji: '⚡',
+        targetFoods: 12,
         timeLimit: const Duration(seconds: 100),
         wrapEnabled: false,
         walls: {
           ..._border(),
-          // دیوار عمودی x=6 با ۲ شکاف
-          for (var y = 2; y <= 17; y++)
-            if (y != 5 && y != 14) Point(6, y),
-          // دیوار عمودی x=13 با ۲ شکاف
-          for (var y = 2; y <= 17; y++)
-            if (y != 5 && y != 14) Point(13, y),
-          // دیوار افقی y=3 با شکاف وسط
-          for (var x = 2; x <= 17; x++)
-            if (x != 9 && x != 10) Point(x, 3),
-          // دیوار افقی y=16 با شکاف وسط
-          for (var x = 2; x <= 17; x++)
-            if (x != 9 && x != 10) Point(x, 16),
-        },
-      ),
 
-      // ۳۶. زیگزاگ — ۳ دیوار افقی با شکاف وسط
-      Level(
-        id: 36,
-        emoji: '⚡',
-        targetFoods: 10,
-        timeLimit: const Duration(seconds: 95),
-        wrapEnabled: false,
-        walls: {
-          ..._border(),
-          for (var x = 2; x <= 8; x++) Point(x, 5),
-          for (var x = 11; x <= 17; x++) Point(x, 5),
-          for (var x = 2; x <= 8; x++) Point(x, 10),
-          for (var x = 11; x <= 17; x++) Point(x, 10),
-          for (var x = 2; x <= 8; x++) Point(x, 15),
-          for (var x = 11; x <= 17; x++) Point(x, 15),
+          // ردیف ۱۵ (نزدیک شروع مار از غرب) — دیوار راست، شکاف چپ
+          for (var x = 10; x <= 18; x++) Point(x, 15),
+
+          // ردیف ۱۰ (وسط) — دیوار چپ، شکاف راست
+          for (var x = 1; x <= 9; x++) Point(x, 10),
+
+          // ردیف ۵ (بالا) — دیوار راست، شکاف چپ
+          for (var x = 10; x <= 18; x++) Point(x, 5),
         },
       ),
 
