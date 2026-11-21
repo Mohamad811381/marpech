@@ -1,6 +1,7 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:marpech/services/theme_service.dart';
 import '../models/game_palette.dart';
 import '../services/audio_service.dart';
@@ -169,30 +170,42 @@ class _MainShellState extends State<MainShell> {
       );
     }
 
-    return PopScope(
-      canPop: _currentIndex == 0,
-      onPopInvokedWithResult: (didPop, _) {
-        if (!didPop && _currentIndex != 0) {
-          setState(() => _currentIndex = 0);
-        }
-      },
-      child: Scaffold(
-        backgroundColor: _palette.bg,
-        drawer: AppDrawer(
-          palette: _palette,
-          muted: _muted,
-          onToggleMute: _toggleMute,
-          onOpenSettings: _openSettings,
-          onPaletteChanged: _reloadPalette,
-        ),
-        body: SafeArea(
-          bottom: false,
-          child: _buildBody(),
-        ),
-        bottomNavigationBar: AppBottomNav(
-          palette: _palette,
-          currentIndex: _currentIndex,
-          onChanged: (i) => setState(() => _currentIndex = i),
+    final isDark =
+        ThemeData.estimateBrightnessForColor(_palette.bg) == Brightness.dark;
+
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle(
+        systemNavigationBarColor: _palette.bg,
+        systemNavigationBarDividerColor: Colors.transparent,
+        systemNavigationBarIconBrightness:
+            isDark ? Brightness.light : Brightness.dark,
+      ),
+      child: PopScope(
+        canPop: _currentIndex == 0,
+        onPopInvokedWithResult: (didPop, _) {
+          if (!didPop && _currentIndex != 0) {
+            setState(() => _currentIndex = 0);
+          }
+        },
+        child: Scaffold(
+          extendBody: true,
+          backgroundColor: _palette.bg,
+          drawer: AppDrawer(
+            palette: _palette,
+            muted: _muted,
+            onToggleMute: _toggleMute,
+            onOpenSettings: _openSettings,
+            onPaletteChanged: _reloadPalette,
+          ),
+          body: SafeArea(
+            bottom: false,
+            child: _buildBody(),
+          ),
+          bottomNavigationBar: AppBottomNav(
+            palette: _palette,
+            currentIndex: _currentIndex,
+            onChanged: (i) => setState(() => _currentIndex = i),
+          ),
         ),
       ),
     );
