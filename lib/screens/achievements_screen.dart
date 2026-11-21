@@ -99,7 +99,12 @@ class _AchievementsScreenState extends State<AchievementsScreen>
               children: AchievementCategory.values.map((cat) {
                 final list = _byCategory(cat);
                 return ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+                  padding: EdgeInsets.fromLTRB(
+                    16,
+                    16,
+                    16,
+                    16 + MediaQuery.of(context).padding.bottom,
+                  ),
                   itemCount: list.length,
                   separatorBuilder: (_, __) => const SizedBox(height: 10),
                   itemBuilder: (context, i) {

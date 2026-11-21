@@ -95,7 +95,12 @@ class _StatsScreenState extends State<StatsScreen> {
     final content = s == null
         ? Center(child: CircularProgressIndicator(color: p.accent))
         : ListView(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+            padding: EdgeInsets.fromLTRB(
+              16,
+              16,
+              16,
+              16 + MediaQuery.of(context).padding.bottom,
+            ),
             children: [
               _heroCard(s),
               const SizedBox(height: 14),

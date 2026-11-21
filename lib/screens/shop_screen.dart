@@ -44,7 +44,7 @@ class _ShopScreenState extends State<ShopScreen>
   String _selectedTrailId = 'none';
   Set<String> _patterns = {};
   Set<String> _intros = {};
-String _selectedIntroId = 'none';
+  String _selectedIntroId = 'none';
   String _selectedPatternId = 'none';
   String _selectedThemeId = 'neon';
   String _selectedSnakeSkinId = 'basic';
@@ -82,14 +82,14 @@ String _selectedIntroId = 'none';
     final foodSkins = await ShopService.getUnlockedFoodSkins();
     final trails = await ShopService.getUnlockedTrails();
     final patterns = await ShopService.getUnlockedPatterns();
-    final intros = await ShopService.getUnlockedIntros();          // ← این
+    final intros = await ShopService.getUnlockedIntros(); // ← این
     final paletteIndex = await StorageService.getPaletteIndex();
     final snakeId = await ShopService.getSelectedSnakeSkin();
     final ghostId = await ShopService.getSelectedGhostSkin();
     final foodId = await ShopService.getSelectedFoodSkin();
     final trailId = await ShopService.getSelectedTrail();
     final patternId = await ShopService.getSelectedPattern();
-    final introId = await ShopService.getSelectedIntro();          // ← این
+    final introId = await ShopService.getSelectedIntro(); // ← این
     if (!mounted) return;
     setState(() {
       _coins = coins;
@@ -99,7 +99,7 @@ String _selectedIntroId = 'none';
       _foodSkins = foodSkins;
       _trails = trails;
       _patterns = patterns;
-      _intros = intros;                                            // ← این
+      _intros = intros; // ← این
       _selectedThemeId =
           palettes[paletteIndex.clamp(0, palettes.length - 1)].id;
       _selectedSnakeSkinId = snakeId;
@@ -107,11 +107,12 @@ String _selectedIntroId = 'none';
       _selectedFoodSkinId = foodId;
       _selectedTrailId = trailId;
       _selectedPatternId = patternId;
-      _selectedIntroId = introId;                                  // ← این
+      _selectedIntroId = introId; // ← این
       _loaded = true;
     });
     _pickSpecialItem();
   }
+
   void _pickSpecialItem() {
     if (allShopItems.isEmpty) {
       if (mounted) setState(() => _specialItemKey = null);
@@ -150,6 +151,7 @@ String _selectedIntroId = 'none';
         return _intros.contains(item.id);
     }
   }
+
   bool _isSelected(ShopItem item) {
     switch (item.type) {
       case ShopItemType.theme:
@@ -164,7 +166,7 @@ String _selectedIntroId = 'none';
         return _selectedTrailId == item.id;
       case ShopItemType.pattern:
         return _selectedPatternId == item.id;
-              case ShopItemType.intro:
+      case ShopItemType.intro:
         return _selectedIntroId == item.id;
     }
   }
@@ -224,7 +226,7 @@ String _selectedIntroId = 'none';
         await ShopService.setSelectedPattern(item.id);
         if (mounted) setState(() => _selectedPatternId = item.id);
         break;
-              case ShopItemType.intro:
+      case ShopItemType.intro:
         await ShopService.setSelectedIntro(item.id);
         if (mounted) setState(() => _selectedIntroId = item.id);
         break;
@@ -264,7 +266,12 @@ String _selectedIntroId = 'none';
         else
           Expanded(
             child: ListView(
-              padding: const EdgeInsets.only(top: 8, bottom: 24),
+              padding: EdgeInsets.fromLTRB(
+                16,
+                8,
+                16,
+                16 + MediaQuery.of(context).padding.bottom,
+              ),
               children: [
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -284,12 +291,11 @@ String _selectedIntroId = 'none';
                   ShopItemType.theme,
                 ),
                 const SizedBox(height: 20),
-
                 _section(
-  L10n.t('shop_section_intros'),
-  Icons.movie_rounded,
-  ShopItemType.intro,
-),
+                  L10n.t('shop_section_intros'),
+                  Icons.movie_rounded,
+                  ShopItemType.intro,
+                ),
                 _section(
                   L10n.t('shop_section_snake_skins'),
                   Icons.gesture_rounded,
@@ -1071,8 +1077,6 @@ String _selectedIntroId = 'none';
       },
     );
   }
-
-  
 
   Widget _buildPreviewMockup(ShopItem item) {
     BoardPattern previewPattern = BoardPattern.none;

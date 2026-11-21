@@ -55,7 +55,12 @@ class _PlayerProgressTabState extends State<PlayerProgressTab> {
       color: p.accent,
       backgroundColor: p.surface,
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+        padding: EdgeInsets.fromLTRB(
+          16,
+          16,
+          16,
+          16 + MediaQuery.of(context).padding.bottom,
+        ),
         children: [
           _heroCard(profile, level, atMax),
           const SizedBox(height: 14),

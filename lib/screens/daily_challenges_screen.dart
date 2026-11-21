@@ -74,7 +74,12 @@ class _DailyChallengesScreenState extends State<DailyChallengesScreen> {
                 ),
               )
             : ListView(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                padding: EdgeInsets.fromLTRB(
+                  16,
+                  8,
+                  16,
+                  16 + MediaQuery.of(context).padding.bottom,
+                ),
                 children: [
                   // در حالت embedded، کارت سکه نشون داده نمی‌شه (چون DailyTab خودش کارت پاداش داره)
                   if (!widget.embedded) ...[
@@ -134,8 +139,7 @@ class _DailyChallengesScreenState extends State<DailyChallengesScreen> {
               ],
             ),
           ),
-          Icon(Icons.event_available_rounded,
-              color: p.accent, size: 26),
+          Icon(Icons.event_available_rounded, color: p.accent, size: 26),
         ],
       ),
     );
@@ -185,8 +189,7 @@ class _DailyChallengesScreenState extends State<DailyChallengesScreen> {
               shape: BoxShape.circle,
               border: Border.all(color: p.food.withOpacity(0.5)),
             ),
-            child: Icon(Icons.monetization_on_rounded,
-                color: p.food, size: 28),
+            child: Icon(Icons.monetization_on_rounded, color: p.food, size: 28),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -272,8 +275,7 @@ class _DailyChallengesScreenState extends State<DailyChallengesScreen> {
                         fontSize: 14,
                         fontWeight: FontWeight.w800,
                         color: claimed ? p.textMuted : p.textPrimary,
-                        decoration:
-                            claimed ? TextDecoration.lineThrough : null,
+                        decoration: claimed ? TextDecoration.lineThrough : null,
                       ),
                     ),
                     const SizedBox(height: 4),

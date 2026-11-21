@@ -433,7 +433,12 @@ class _HomeTabState extends State<HomeTab> with TickerProviderStateMixin {
     }
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
+      padding: EdgeInsets.fromLTRB(
+        22,
+        14,
+        22,
+        14 + MediaQuery.of(context).padding.bottom,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

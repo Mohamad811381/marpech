@@ -111,7 +111,12 @@ class _MissionsScreenState extends State<MissionsScreen>
                   return _emptyTabState(tab);
                 }
                 return ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+                  padding: EdgeInsets.fromLTRB(
+                    16,
+                    16,
+                    16,
+                    16 + MediaQuery.of(context).padding.bottom,
+                  ),
                   children: list.map(_missionCard).toList(),
                 );
               }).toList(),
