@@ -209,7 +209,8 @@ class _GameScreenState extends State<GameScreen>
   Duration? get _activeTimeLimit =>
       _isTimeAttack ? widget.timeLimit : widget.level?.timeLimit;
 
-  Set<math.Point<int>> get _walls => widget.level?.walls ?? const {};
+  Set<math.Point<int>> get _walls =>
+      widget.level?.walls ?? LevelsService.freePlayWalls(d);
   List<PortalPair> get _portals => widget.level?.portals ?? const [];
 
   Point<int>? _getPortalDestination(math.Point<int> pos) {

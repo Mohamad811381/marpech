@@ -210,7 +210,7 @@ extension _GameRouteLogic on _GameScreenState {
       return;
     }
 
-    if (safeDir == null && !_emergencyUsedThisSession) {
+    if (safeDir == null && !_isLevelMode && !_emergencyUsedThisSession) {
       _showEmergencyRescueDialog();
       return;
     }
@@ -235,6 +235,7 @@ extension _GameRouteLogic on _GameScreenState {
   }
 
   Future<void> _showEmergencyRescueDialog() async {
+    if (_isLevelMode || _isShowingEmergencyDialog) return;
     if (_isShowingEmergencyDialog) return;
 
     setState(() => _isShowingEmergencyDialog = true);

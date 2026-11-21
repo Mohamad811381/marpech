@@ -6,6 +6,7 @@ import '../models/level.dart';
 import 'package:material_ui/material_ui.dart';
 import '../models/chapter.dart';
 import '../models/portal.dart';
+import '../models/difficulty.dart';
 
 class LevelsService {
   static const _progressKey = 'levels_progress';
@@ -71,6 +72,15 @@ class LevelsService {
       }
     }
     return r;
+  }
+
+  static final Map<Difficulty, Set<Point<int>>> _freePlayCache = {};
+
+  /// دیوار بازی آزاد: easy = بدون دیوار، normal و hard = دیوار کناری
+  static Set<Point<int>> freePlayWalls(Difficulty d) {
+    return _freePlayCache.putIfAbsent(d, () {
+      return d == Difficulty.easy ? <Point<int>>{} : _border().toSet();
+    });
   }
 
   static List<Point<int>> _border() {

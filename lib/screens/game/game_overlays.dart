@@ -977,325 +977,313 @@ class _EmergencyOverlayState extends State<EmergencyOverlay>
   Widget build(BuildContext context) {
     final p = widget.palette;
     final isFa = L10n.isFa;
+    final mq = MediaQuery.of(context);
+    final compact = mq.size.width < 360;
+    final pad = compact ? 10.0 : 16.0;
+    final edge = compact ? 6.0 : 12.0;
 
     return Positioned.fill(
-      child: Stack(
-        children: [
-          GestureDetector(
-            onTap: _handleDecline,
-            child: Container(
-              color: Colors.black.withOpacity(0.55),
-            ),
+      child: MediaQuery(
+        data: mq.copyWith(
+          textScaler: mq.textScaler.clamp(
+            minScaleFactor: 0.9,
+            maxScaleFactor: 1.15,
           ),
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: AnimatedBuilder(
-              animation: _slideIn,
-              builder: (_, child) {
-                final v = _slideIn.value.clamp(0.0, 1.0);
-                final slideT = Curves.easeOutCubic.transform(v);
-                final slide = Offset(0, 1 - slideT);
-                final fadeT = Curves.easeOut.transform(v);
-                final scaleT = Curves.easeOutBack.transform(v);
-                final scale = 0.92 + (scaleT * 0.08);
-
-                return FractionalTranslation(
-                  translation: slide,
-                  child: Opacity(
-                    opacity: fadeT,
-                    child: Transform.scale(
-                      scale: scale,
-                      child: child,
-                    ),
-                  ),
-                );
-              },
-              child: SafeArea(
-                top: false,
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final screenWidth = MediaQuery.sizeOf(context).width;
-                    final compact = screenWidth < 360;
-
-                    return Padding(
-                      padding: EdgeInsets.fromLTRB(
-                        compact ? 6 : 12,
-                        0,
-                        compact ? 6 : 12,
-                        compact ? 6 : 12,
+        ),
+        child: Stack(
+          children: [
+            GestureDetector(
+              onTap: _handleDecline,
+              child: Container(color: Colors.black.withOpacity(0.55)),
+            ),
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: AnimatedBuilder(
+                animation: _slideIn,
+                builder: (_, child) {
+                  final v = _slideIn.value.clamp(0.0, 1.0);
+                  final slideT = Curves.easeOutCubic.transform(v);
+                  final fadeT = Curves.easeOut.transform(v);
+                  final scaleT = Curves.easeOutBack.transform(v);
+                  return FractionalTranslation(
+                    translation: Offset(0, 1 - slideT),
+                    child: Opacity(
+                      opacity: fadeT,
+                      child: Transform.scale(
+                        scale: 0.92 + (scaleT * 0.08),
+                        child: child,
                       ),
-                      child: ConstrainedBox(
-                        constraints: BoxConstraints(
-                          maxWidth: 420,
-                          maxHeight: MediaQuery.sizeOf(context).height * 0.55,
-                        ),
-                        child: SingleChildScrollView(
-                          child: Container(
-                            width: double.infinity,
-                            padding: EdgeInsets.fromLTRB(
-                              compact ? 10 : 16,
-                              compact ? 10 : 12,
-                              compact ? 10 : 16,
-                              compact ? 10 : 12,
+                    ),
+                  );
+                },
+                child: SafeArea(
+                  top: false,
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(edge, 0, edge, edge),
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxWidth: 420,
+                        maxHeight: mq.size.height * 0.6,
+                      ),
+                      child: SingleChildScrollView(
+                        child: Container(
+                          width: double.infinity,
+                          padding: EdgeInsets.all(pad),
+                          decoration: BoxDecoration(
+                            color: p.surface,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: _gold.withOpacity(0.5),
+                              width: 1,
                             ),
-                            decoration: BoxDecoration(
-                              color: p.surface,
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color: _gold.withOpacity(0.5),
-                                width: 1,
+                            boxShadow: [
+                              BoxShadow(
+                                color: _gold.withOpacity(0.3),
+                                blurRadius: 24,
+                                spreadRadius: 2,
+                                offset: const Offset(0, -4),
                               ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: _gold.withOpacity(0.3),
-                                  blurRadius: 24,
-                                  spreadRadius: 2,
-                                  offset: const Offset(0, -4),
-                                ),
-                              ],
-                            ),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                AnimatedBuilder(
-                                  animation: _timer,
-                                  builder: (_, __) {
-                                    final remaining =
-                                        (1.0 - _timer.value).clamp(0.0, 1.0);
-
-                                    return ClipRRect(
-                                      borderRadius: BorderRadius.circular(2),
-                                      child: LinearProgressIndicator(
-                                        value: remaining,
-                                        minHeight: 3,
-                                        backgroundColor:
-                                            p.border.withOpacity(0.4),
-                                        valueColor: AlwaysStoppedAnimation(
-                                          _canAfford ? _gold : p.food,
-                                        ),
+                            ],
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              // ── نوار تایمر ──
+                              AnimatedBuilder(
+                                animation: _timer,
+                                builder: (_, __) {
+                                  final remaining =
+                                      (1.0 - _timer.value).clamp(0.0, 1.0);
+                                  return ClipRRect(
+                                    borderRadius: BorderRadius.circular(2),
+                                    child: LinearProgressIndicator(
+                                      value: remaining,
+                                      minHeight: 3,
+                                      backgroundColor:
+                                          p.border.withOpacity(0.4),
+                                      valueColor: AlwaysStoppedAnimation(
+                                        _canAfford ? _gold : p.food,
                                       ),
-                                    );
-                                  },
-                                ),
-                                SizedBox(height: compact ? 8 : 12),
-                                Row(
-                                  children: [
-                                    AnimatedBuilder(
-                                      animation: _timer,
-                                      builder: (_, __) {
-                                        final remaining = (1.0 - _timer.value)
-                                            .clamp(0.0, 1.0);
-                                        final secs =
-                                            (remaining * 5).ceil().clamp(1, 5);
-
-                                        final circleSize =
-                                            compact ? 32.0 : 36.0;
-
-                                        return Container(
-                                          width: circleSize,
-                                          height: circleSize,
-                                          alignment: Alignment.center,
-                                          decoration: BoxDecoration(
-                                            shape: BoxShape.circle,
-                                            color: _gold.withOpacity(0.15),
-                                            border: Border.all(
-                                              color: _canAfford
-                                                  ? _gold.withOpacity(0.6)
-                                                  : p.food.withOpacity(0.6),
-                                              width: 1.5,
-                                            ),
-                                          ),
-                                          child: Text(
-                                            '$secs',
-                                            style: TextStyle(
-                                              fontSize: compact ? 13 : 15,
-                                              fontWeight: FontWeight.w900,
-                                              color:
-                                                  _canAfford ? _gold : p.food,
-                                            ),
-                                          ),
-                                        );
-                                      },
                                     ),
-                                    SizedBox(width: compact ? 7 : 12),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Row(
-                                            children: [
-                                              Text(
-                                                '🕊️',
-                                                style: TextStyle(
-                                                  fontSize: compact ? 12 : 13,
-                                                ),
-                                              ),
-                                              const SizedBox(width: 5),
-                                              Flexible(
-                                                child: Text(
-                                                  L10n.t(
-                                                    'emergency_rescue_title',
-                                                  ),
-                                                  style: TextStyle(
-                                                    fontSize: compact ? 12 : 14,
-                                                    fontWeight: FontWeight.w800,
-                                                    color: p.textPrimary,
-                                                    height: 1.2,
-                                                  ),
-                                                  maxLines: 1,
-                                                  overflow:
-                                                      TextOverflow.ellipsis,
-                                                ),
-                                              ),
-                                            ],
+                                  );
+                                },
+                              ),
+                              SizedBox(height: compact ? 8 : 12),
+
+                              // ── ردیف اطلاعات ──
+                              Row(
+                                children: [
+                                  AnimatedBuilder(
+                                    animation: _timer,
+                                    builder: (_, __) {
+                                      final remaining =
+                                          (1.0 - _timer.value).clamp(0.0, 1.0);
+                                      final secs =
+                                          (remaining * 5).ceil().clamp(1, 5);
+                                      final size = compact ? 34.0 : 40.0;
+                                      return Container(
+                                        width: size,
+                                        height: size,
+                                        alignment: Alignment.center,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: _gold.withOpacity(0.15),
+                                          border: Border.all(
+                                            color: _canAfford
+                                                ? _gold.withOpacity(0.6)
+                                                : p.food.withOpacity(0.6),
+                                            width: 1.5,
                                           ),
-                                          const SizedBox(height: 4),
-                                          Wrap(
-                                            crossAxisAlignment:
-                                                WrapCrossAlignment.center,
-                                            spacing: 4,
-                                            children: [
-                                              Icon(
-                                                Icons.monetization_on_rounded,
-                                                size: 12,
-                                                color: _gold,
-                                              ),
-                                              Text(
-                                                '${widget.coins}',
+                                        ),
+                                        child: Text(
+                                          '$secs',
+                                          style: TextStyle(
+                                            fontSize: compact ? 14 : 16,
+                                            fontWeight: FontWeight.w900,
+                                            color: _canAfford ? _gold : p.food,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                  SizedBox(width: compact ? 8 : 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Text('🕊️',
                                                 style: TextStyle(
-                                                  fontSize: 11,
-                                                  fontWeight: FontWeight.w700,
+                                                    fontSize:
+                                                        compact ? 13 : 15)),
+                                            const SizedBox(width: 6),
+                                            Flexible(
+                                              child: Text(
+                                                L10n.t(
+                                                    'emergency_rescue_title'),
+                                                style: TextStyle(
+                                                  fontSize: compact ? 13 : 15,
+                                                  fontWeight: FontWeight.w800,
                                                   color: p.textPrimary,
+                                                  height: 1.2,
                                                 ),
-                                              ),
-                                              if (_canAfford) ...[
-                                                Icon(
-                                                  isFa
-                                                      ? Icons.arrow_back_rounded
-                                                      : Icons
-                                                          .arrow_forward_rounded,
-                                                  size: 10,
-                                                  color: p.textMuted,
-                                                ),
-                                                Text(
-                                                  '$_after',
-                                                  style: TextStyle(
-                                                    fontSize: 11,
-                                                    fontWeight: FontWeight.w700,
-                                                    color:
-                                                        _gold.withOpacity(0.65),
-                                                  ),
-                                                ),
-                                              ],
-                                            ],
-                                          ),
-                                          if (!_canAfford) ...[
-                                            const SizedBox(height: 2),
-                                            Text(
-                                              L10n.tf(
-                                                'continue_not_enough',
-                                                {'n': _shortage},
-                                              ),
-                                              style: TextStyle(
-                                                fontSize: compact ? 9 : 10,
-                                                fontWeight: FontWeight.w700,
-                                                color: p.food,
+                                                maxLines: 2,
+                                                overflow: TextOverflow.ellipsis,
                                               ),
                                             ),
                                           ],
-                                        ],
-                                      ),
-                                    ),
-                                    SizedBox(width: compact ? 3 : 8),
-                                    Material(
-                                      color: Colors.transparent,
-                                      borderRadius: BorderRadius.circular(10),
-                                      child: InkWell(
-                                        onTap: _handleDecline,
-                                        borderRadius: BorderRadius.circular(10),
-                                        child: Container(
-                                          constraints: BoxConstraints(
-                                            minWidth: compact ? 42 : 48,
-                                            minHeight: 44,
-                                          ),
-                                          alignment: Alignment.center,
-                                          padding: EdgeInsets.symmetric(
-                                            horizontal: compact ? 6 : 10,
-                                          ),
-                                          child: Text(
-                                            L10n.t(
-                                              'emergency_rescue_decline',
-                                            ),
-                                            style: TextStyle(
-                                              fontSize: compact ? 10 : 12,
-                                              fontWeight: FontWeight.w700,
-                                              color: p.textMuted,
-                                            ),
-                                          ),
                                         ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 3),
-                                    Material(
-                                      color: _canAfford ? _gold : p.surfaceAlt,
-                                      borderRadius: BorderRadius.circular(10),
-                                      child: InkWell(
-                                        borderRadius: BorderRadius.circular(10),
-                                        onTap:
-                                            _canAfford ? _handleContinue : null,
-                                        child: Container(
-                                          constraints: BoxConstraints(
-                                            minWidth: compact ? 44 : 48,
-                                            minHeight: 44,
-                                          ),
-                                          padding: EdgeInsets.symmetric(
-                                            horizontal: compact ? 8 : 14,
-                                          ),
-                                          alignment: Alignment.center,
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Text(
-                                                '🕊️',
-                                                style: TextStyle(
-                                                  fontSize: compact ? 12 : 13,
-                                                  color: _canAfford
-                                                      ? Colors.black87
-                                                      : p.textMuted,
-                                                ),
+                                        const SizedBox(height: 4),
+                                        Wrap(
+                                          crossAxisAlignment:
+                                              WrapCrossAlignment.center,
+                                          spacing: 4,
+                                          children: [
+                                            Icon(Icons.monetization_on_rounded,
+                                                size: 13, color: _gold),
+                                            Text(
+                                              '${widget.coins}',
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w700,
+                                                color: p.textPrimary,
                                               ),
-                                              const SizedBox(width: 4),
+                                            ),
+                                            if (_canAfford) ...[
+                                              Icon(
+                                                isFa
+                                                    ? Icons.arrow_back_rounded
+                                                    : Icons
+                                                        .arrow_forward_rounded,
+                                                size: 11,
+                                                color: p.textMuted,
+                                              ),
                                               Text(
-                                                '${widget.cost}',
+                                                '$_after',
                                                 style: TextStyle(
-                                                  fontSize: compact ? 11 : 12,
-                                                  fontWeight: FontWeight.w900,
-                                                  color: _canAfford
-                                                      ? Colors.black87
-                                                      : p.textMuted,
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.w700,
+                                                  color:
+                                                      _gold.withOpacity(0.65),
                                                 ),
                                               ),
                                             ],
+                                          ],
+                                        ),
+                                        if (!_canAfford) ...[
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            L10n.tf('continue_not_enough',
+                                                {'n': _shortage}),
+                                            style: TextStyle(
+                                              fontSize: compact ? 10 : 11,
+                                              fontWeight: FontWeight.w700,
+                                              color: p.food,
+                                            ),
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              SizedBox(height: compact ? 10 : 14),
+
+                              // ── ردیف دکمه‌ها ──
+                              Row(
+                                children: [
+                                  Expanded(
+                                    flex: 2,
+                                    child: Material(
+                                      color: p.surfaceAlt,
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: InkWell(
+                                        onTap: _handleDecline,
+                                        borderRadius: BorderRadius.circular(12),
+                                        child: Container(
+                                          height: 46,
+                                          alignment: Alignment.center,
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 8),
+                                          child: FittedBox(
+                                            fit: BoxFit.scaleDown,
+                                            child: Text(
+                                              L10n.t(
+                                                  'emergency_rescue_decline'),
+                                              style: TextStyle(
+                                                fontSize: compact ? 12 : 13,
+                                                fontWeight: FontWeight.w700,
+                                                color: p.textMuted,
+                                              ),
+                                            ),
                                           ),
                                         ),
                                       ),
                                     ),
-                                  ],
-                                ),
-                              ],
-                            ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    flex: 3,
+                                    child: Material(
+                                      color: _canAfford ? _gold : p.surfaceAlt,
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: InkWell(
+                                        borderRadius: BorderRadius.circular(12),
+                                        onTap:
+                                            _canAfford ? _handleContinue : null,
+                                        child: Container(
+                                          height: 46,
+                                          alignment: Alignment.center,
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 8),
+                                          child: FittedBox(
+                                            fit: BoxFit.scaleDown,
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Text(
+                                                  '🕊️',
+                                                  style: TextStyle(
+                                                    fontSize: 15,
+                                                    color: _canAfford
+                                                        ? Colors.black87
+                                                        : p.textMuted,
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 6),
+                                                Text(
+                                                  '${widget.cost}',
+                                                  style: TextStyle(
+                                                    fontSize: 14,
+                                                    fontWeight: FontWeight.w900,
+                                                    color: _canAfford
+                                                        ? Colors.black87
+                                                        : p.textMuted,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
                         ),
                       ),
-                    );
-                  },
+                    ),
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

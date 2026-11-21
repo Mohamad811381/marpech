@@ -1,4 +1,4 @@
-// ignore_for_file: unused_element
+// ignore_for_file: curly_braces_in_flow_control_structures, unused_element
 
 part of '../game_screen.dart';
 
@@ -59,7 +59,17 @@ extension _GameRespawnLogic on _GameScreenState {
 
     // ۴. direction = snake[0] - snake[1] (باید cardinal باشه)
     if (snake.length < 2) return null;
-    final dir = math.Point(snake[0].x - snake[1].x, snake[0].y - snake[1].y);
+    var dx = snake[0].x - snake[1].x;
+    var dy = snake[0].y - snake[1].y;
+    if (useWrap) {
+      if (dx > 1)
+        dx -= cols;
+      else if (dx < -1) dx += cols;
+      if (dy > 1)
+        dy -= rows;
+      else if (dy < -1) dy += rows;
+    }
+    final dir = math.Point(dx, dy);
     if (dir.x.abs() + dir.y.abs() != 1) return null;
 
     // ۵. head + dir باید آزاد باشه (برای اولین حرکت)
@@ -185,6 +195,4 @@ extension _GameRespawnLogic on _GameScreenState {
 
     return visited.length;
   }
-
-  // اینجا چهار متد می‌آید
 }
