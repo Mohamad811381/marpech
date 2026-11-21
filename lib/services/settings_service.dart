@@ -22,7 +22,7 @@ class SettingsService {
     final p = await SharedPreferences.getInstance();
     _current = GameSettings(
       smoothMovement: p.getBool(_kSmooth) ?? true,
-      showGrid: p.getBool(_kGrid) ?? true,
+      showGrid: p.getBool(_kGrid) ?? false,
       particles: p.getBool(_kParticles) ?? true,
       haptics: p.getBool(_kHaptics) ?? true,
       sfx: p.getBool(_kSfx) ?? true,
@@ -31,8 +31,8 @@ class SettingsService {
       screenShake: p.getBool(_kShake) ?? true,
       wrapEffect: p.getBool(_kWrap) ?? true,
       showGhost: p.getBool(_kGhost) ?? true,
-      dpadSize: DPadSize.values[
-          (p.getInt(_kDpad) ?? 1).clamp(0, DPadSize.values.length - 1)],
+      dpadSize: DPadSize
+          .values[(p.getInt(_kDpad) ?? 1).clamp(0, DPadSize.values.length - 1)],
       controlType: ControlType.values[(p.getInt(_kControlType) ?? 0)
           .clamp(0, ControlType.values.length - 1)],
     );

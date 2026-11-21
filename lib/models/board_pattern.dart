@@ -37,5 +37,5 @@ enum PatternIntensity {
   String get label => L10n.t('pattern_intensity_${id}');
 
   static PatternIntensity fromId(String? id) => PatternIntensity.values
-      .firstWhere((p) => p.id == id, orElse: () => PatternIntensity.subtle);
+      .firstWhere((p) => p.id == id, orElse: () => PatternIntensity.bold);
 }

@@ -43,7 +43,7 @@ class GameSettings {
 
   const GameSettings({
     this.smoothMovement = true,
-    this.showGrid = true,
+    this.showGrid = false,
     this.particles = true,
     this.haptics = true,
     this.sfx = true,

@@ -607,8 +607,7 @@ class ShopService {
 
   static Future<String> getPatternIntensity() async {
     final p = await SharedPreferences.getInstance();
-    return p.getString(_patternIntensityKey) ?? 'subtle';
-  }
+return p.getString(_patternIntensityKey) ?? 'bold';  }
 
   static Future<void> setPatternIntensity(String id) async {
     final p = await SharedPreferences.getInstance();
