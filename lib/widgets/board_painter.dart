@@ -86,8 +86,10 @@ class BoardPainter extends CustomPainter {
         return const Color(0xFFFFD700);
       case PowerUpType.shield:
         return const Color(0xFF00F0FF);
-      case PowerUpType.slow:
+       case PowerUpType.slow:
         return const Color(0xFF8A7BFF);
+      case PowerUpType.ghost:
+        return const Color(0xFFFF5CC8);
       default:
         return _foodSkinColor(foodSkin);
     }
@@ -1213,7 +1215,23 @@ class BoardPainter extends CustomPainter {
           ..lineTo(center.dx + s, center.dy + s)
           ..lineTo(center.dx, center.dy)
           ..close();
-        canvas.drawPath(path, Paint()..color = Colors.white);
+            canvas.drawPath(path, Paint()..color = Colors.white);
+      case PowerUpType.ghost:
+        final r = cell * 0.12;
+        final ghostPath = Path()
+          ..moveTo(center.dx - r, center.dy + r * 0.6)
+          ..lineTo(center.dx - r, center.dy)
+          ..arcToPoint(
+            Offset(center.dx + r, center.dy),
+            radius: Radius.circular(r),
+            clockwise: true,
+          )
+          ..lineTo(center.dx + r, center.dy + r)
+          ..lineTo(center.dx + r / 3, center.dy + r * 0.6)
+          ..lineTo(center.dx - r / 3, center.dy + r)
+          ..lineTo(center.dx - r, center.dy + r * 0.6)
+          ..close();
+        canvas.drawPath(ghostPath, Paint()..color = Colors.white);
     }
   }
 

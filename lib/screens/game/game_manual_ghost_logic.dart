@@ -4,6 +4,7 @@ part of '../game_screen.dart';
 
 extension _GameManualGhostLogic on _GameScreenState {
   bool get _canUseManualGhost =>
+      _ghostCharges > 0 &&
       !_manualGhost &&
       !_over &&
       !_won &&
@@ -18,21 +19,31 @@ extension _GameManualGhostLogic on _GameScreenState {
     if (!_canUseManualGhost) return;
     _manualGhostTimer?.cancel();
     setState(() {
+      _ghostCharges--;
       _manualGhost = true;
       _manualGhostTimeUp = false;
       _manualGhostLife = 4;
+      _manualGhostGrace = 0;
     });
     AppHaptics.medium();
     _audio.playSfx(Sfx.newRecord);
 
     _manualGhostTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!mounted || _paused) return;
-      if (_manualGhostLife > 0) setState(() => _manualGhostLife--);
-      if (_manualGhostLife <= 0) {
-        _manualGhostTimer?.cancel();
-        _manualGhostTimeUp = true;
-        _tryEndManualGhost();
+      if (_manualGhostLife > 0) {
+        setState(() {
+          _manualGhostLife--;
+          if (_manualGhostLife <= 0) _manualGhostTimeUp = true;
+        });
+        if (_manualGhostTimeUp) _tryEndManualGhost();
+        return;
       }
+      if (!_manualGhost) {
+        _manualGhostTimer?.cancel();
+        return;
+      }
+      setState(() => _manualGhostGrace++);
+      if (_manualGhostGrace >= 3) _killStuckGhost();
     });
   }
 
@@ -57,10 +68,21 @@ extension _GameManualGhostLogic on _GameScreenState {
     AppHaptics.selection();
   }
 
+  void _killStuckGhost() {
+    _manualGhostTimer?.cancel();
+    if (!mounted) return;
+    setState(() {
+      _manualGhost = false;
+      _manualGhostTimeUp = false;
+    });
+    _gameOver();
+  }
+
   Widget _ghostButton() {
     const cyan = Color(0xFF00F0FF);
     final enabled = _canUseManualGhost;
     final active = _manualGhost;
+    if (_ghostCharges <= 0 && !active) return const SizedBox(height: 30);
     return GestureDetector(
       onTap: enabled ? _activateManualGhost : null,
       child: AnimatedOpacity(
@@ -84,8 +106,12 @@ extension _GameManualGhostLogic on _GameScreenState {
               const SizedBox(width: 4),
               Text(
                 active
-                    ? (_manualGhostTimeUp ? '…' : '${_manualGhostLife}s')
-                    : L10n.t('game_ghost_chip'),
+                    ? (_manualGhostTimeUp
+                        ? '⚠ ${3 - _manualGhostGrace}'
+                        : '${_manualGhostLife}s')
+                    : (_ghostCharges > 1
+                        ? '${L10n.t('game_ghost_chip')} ×$_ghostCharges'
+                        : L10n.t('game_ghost_chip')),
                 style: TextStyle(
                   color: active ? cyan : p.textPrimary,
                   fontSize: 11,

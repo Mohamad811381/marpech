@@ -221,7 +221,9 @@ class _GameScreenState extends State<GameScreen>
   bool _manualGhost = false;
   bool _manualGhostTimeUp = false;
   int _manualGhostLife = 0;
-  Timer? _manualGhostTimer;
+  int _manualGhostGrace = 0;  Timer? _manualGhostTimer;
+  int _ghostCharges = 0;
+  int _ghostApplesEaten = 0;
   GamePalette get p => widget.palette;
   Difficulty get d => widget.difficulty;
   bool get _isLevelMode => widget.level != null;
@@ -507,10 +509,12 @@ class _GameScreenState extends State<GameScreen>
     _dynamicPortals = [];
     _pendingPortal = null;
     _manualGhostTimer?.cancel();
+    _ghostCharges = 0;
+    _ghostApplesEaten = 0;
     _manualGhost = false;
     _manualGhostTimeUp = false;
     _manualGhostLife = 0;
-    _continueCount = 0;
+    _manualGhostGrace = 0;    _continueCount = 0;
     _isShowingContinueDialog = false;
     _isShowingEmergencyDialog = false;
     _emergencyUsedThisSession = false;
@@ -691,6 +695,12 @@ class _GameScreenState extends State<GameScreen>
     } else {
       _currentPowerUp = PowerUp.slow;
     }
+    if (!_isLevelMode &&
+        _ghostApplesEaten < 3 &&
+        _currentPowerUp == null &&
+        _rng.nextDouble() < 0.04) {
+      _currentPowerUp = PowerUp.ghost;
+    }
   }
 
   void _step() {
@@ -824,6 +834,10 @@ class _GameScreenState extends State<GameScreen>
       case PowerUpType.slow:
         _activateSlow();
         _everHadSlow = true;
+        break;
+      case PowerUpType.ghost:
+        _ghostCharges++;
+        _ghostApplesEaten++;
         break;
       case null:
         break;

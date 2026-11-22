@@ -73,8 +73,11 @@ extension _GameEffectsLogic on _GameScreenState {
       case PowerUpType.shield:
         primary = const Color(0xFF00F0FF);
         break;
-      case PowerUpType.slow:
+           case PowerUpType.slow:
         primary = const Color(0xFF8A7BFF);
+        break;
+      case PowerUpType.ghost:
+        primary = const Color(0xFFFF5CC8);
         break;
       case null:
         primary = p.food;
