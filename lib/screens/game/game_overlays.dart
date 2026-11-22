@@ -6,6 +6,7 @@ import '../../models/game_palette.dart';
 import '../../models/level.dart';
 import '../../services/audio_service.dart';
 import '../../services/localization_service.dart';
+import 'dart:math' as math;
 
 // ─────────────────────────────────────────────────
 // Start Countdown Overlay
@@ -137,80 +138,121 @@ class StartCountdownOverlay extends StatelessWidget {
 class EndCountdownOverlay extends StatelessWidget {
   final GamePalette palette;
   final int endCountdown;
+  final Offset impact;
 
   const EndCountdownOverlay({
     super.key,
     required this.palette,
     required this.endCountdown,
+    required this.impact,
   });
 
   @override
   Widget build(BuildContext context) {
-    final p = palette;
-    final isImpact = endCountdown <= 1;
-    final text = isImpact ? '💥' : '$endCountdown';
-    final color = isImpact
-        ? const Color(0xFFFF3D6A)
-        : (endCountdown == 3 ? p.food : const Color(0xFFFF8A5B));
-
     return IgnorePointer(
-      child: Container(
-        color: Colors.black.withOpacity(0.65),
-        alignment: Alignment.center,
-        child: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 200),
-          transitionBuilder: (child, anim) => ScaleTransition(
-            scale: Tween<double>(begin: 0.4, end: 1.0).animate(
-              CurvedAnimation(parent: anim, curve: Curves.easeOutBack),
-            ),
-            child: FadeTransition(opacity: anim, child: child),
-          ),
-          child: Column(
-            key: ValueKey(endCountdown),
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (!isImpact)
-                Container(
-                  margin: const EdgeInsets.only(bottom: 14),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: p.food.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: p.food.withOpacity(0.5)),
-                  ),
-                  child: Text(
-                    L10n.t('game_crashed'),
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w800,
-                      color: p.food,
-                    ),
-                  ),
-                ),
-              Text(
-                text,
-                style: TextStyle(
-                  fontSize: isImpact ? 110 : 96,
-                  fontWeight: FontWeight.w900,
-                  color: color,
-                  height: 1.0,
-                  shadows: [
-                    Shadow(
-                      color: color.withOpacity(0.7),
-                      blurRadius: 40,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+      child: TweenAnimationBuilder<double>(
+        tween: Tween(begin: 0.0, end: 1.0),
+        duration: const Duration(milliseconds: 650),
+        builder: (context, t, _) => CustomPaint(
+          painter: _ImpactPainter(t, impact),
+          child: const SizedBox.expand(),
         ),
       ),
     );
   }
 }
 
+class _ImpactPainter extends CustomPainter {
+  final double t;
+  final Offset impact;
+
+  _ImpactPainter(this.t, this.impact);
+
+  static const _red = Color(0xFFFF3D6A);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    final c = Offset(impact.dx * size.width, impact.dy * size.height);
+
+    final inT = Curves.easeOut.transform((t / 0.25).clamp(0.0, 1.0));
+    final e = Curves.easeOutCubic.transform((t / 0.8).clamp(0.0, 1.0));
+
+    // تیره شدن ملایم
+    canvas.drawRect(rect, Paint()..color = Colors.black.withOpacity(0.35 * inT));
+
+    // وینیت قرمز از لبه‌ها
+    canvas.drawRect(
+      rect,
+      Paint()
+        ..shader = RadialGradient(
+          radius: 0.85,
+          colors: [
+            _red.withOpacity(0.0),
+            _red.withOpacity(0.45 * inT),
+          ],
+          stops: const [0.5, 1.0],
+        ).createShader(rect),
+    );
+
+    // فلش نقطه‌ی برخورد
+    final flash = (1 - t * 3.5).clamp(0.0, 1.0);
+    if (flash > 0) {
+      canvas.drawCircle(
+        c,
+        70,
+        Paint()
+          ..shader = RadialGradient(
+            colors: [
+              Colors.white.withOpacity(0.75 * flash),
+              Colors.white.withOpacity(0.0),
+            ],
+          ).createShader(Rect.fromCircle(center: c, radius: 70)),
+      );
+    }
+
+    // موج برخورد
+    final fade = (1 - t).clamp(0.0, 1.0);
+    canvas.drawCircle(
+      c,
+      size.shortestSide * 0.38 * e,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3 * (1 - e) + 0.6
+        ..color = Colors.white.withOpacity(fade * 0.9),
+    );
+    canvas.drawCircle(
+      c,
+      size.shortestSide * 0.24 * e,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2 * (1 - e) + 0.5
+        ..color = _red.withOpacity(fade * 0.8),
+    );
+
+    // خرده‌ها
+    const n = 10;
+    final shard = Paint()..strokeCap = StrokeCap.round;
+    for (var i = 0; i < n; i++) {
+      final k = i % 3;
+      final a = (i / n) * 2 * math.pi + i * 0.37;
+      final r0 = 14 + k * 8 + (60 + k * 26) * e;
+      final len = (16 - k * 3) * (1 - e * 0.7);
+      shard
+        ..strokeWidth = 2.2 - k * 0.5
+        ..color = (i.isEven ? Colors.white : _red).withOpacity(fade);
+      canvas.drawLine(
+        c + Offset(math.cos(a) * r0, math.sin(a) * r0),
+        c + Offset(math.cos(a) * (r0 + len), math.sin(a) * (r0 + len)),
+        shard,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_ImpactPainter old) =>
+      old.t != t || old.impact != impact;
+}
 // ─────────────────────────────────────────────────
 // Game Overlay (win / game over / paused)
 // ─────────────────────────────────────────────────
@@ -444,13 +486,13 @@ class GameOverlay extends StatelessWidget {
         bot != null
             ? L10n.tf('game_bot_vs_score', {'n': score, 'm': bot})
             : isLevelMode
-            ? L10n.tf('game_progress_label', {
-                'n': foodsEaten,
-                'm': level?.targetFoods ?? 0,
-              })
-            : isTimeAttack
-                ? L10n.tf('game_score_record', {'n': score, 'm': best})
-                : L10n.tf('game_score_label', {'n': score}),
+                ? L10n.tf('game_progress_label', {
+                    'n': foodsEaten,
+                    'm': level?.targetFoods ?? 0,
+                  })
+                : isTimeAttack
+                    ? L10n.tf('game_score_record', {'n': score, 'm': best})
+                    : L10n.tf('game_score_label', {'n': score}),
         style: TextStyle(fontSize: 14, color: p.textMuted),
       ),
       const SizedBox(height: 20),

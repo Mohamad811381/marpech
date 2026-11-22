@@ -469,7 +469,7 @@ extension _GameRouteLogic on _GameScreenState {
     final cost = _continueCost;
     if (cost <= 0) {
       if (mounted) setState(() => _isShowingContinueDialog = false);
-      _startEndCountdown();
+      await _finalizeGameOver();
       return;
     }
 
@@ -478,7 +478,7 @@ extension _GameRouteLogic on _GameScreenState {
 
     if (!success) {
       setState(() => _isShowingContinueDialog = false);
-      _startEndCountdown();
+      await _finalizeGameOver();
       return;
     }
 
@@ -502,7 +502,7 @@ extension _GameRouteLogic on _GameScreenState {
         _slowRemaining = 0;
         _wasComboActive = false;
       });
-      _startEndCountdown();
+      await _finalizeGameOver();
       return;
     }
 
@@ -588,7 +588,7 @@ extension _GameRouteLogic on _GameScreenState {
     AppHaptics.selection();
     _audio.playSfx(Sfx.button);
     setState(() => _isShowingContinueDialog = false);
-    _startEndCountdown();
+    _finalizeGameOver();
   }
 
   Future<void> _showContinueDialog() async {

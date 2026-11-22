@@ -295,6 +295,10 @@ extension _GameBoardView on _GameScreenState {
                   EndCountdownOverlay(
                     palette: p,
                     endCountdown: _endCountdown,
+                    impact: Offset(
+                      (_snake.first.x + 0.5) / cols,
+                      (_snake.first.y + 0.5) / rows,
+                    ),
                   ),
                 if (_isShowingContinueDialog)
                   ContinueOverlay(

@@ -114,16 +114,16 @@ extension _GameEndLogic on _GameScreenState {
     _audio.playSfx(Sfx.gameOver);
     AppHaptics.heavy();
 
-    // ⏳ صبر کن تا shake تموم شه (۳۸۰ms) + یه ذره مکث
-    await Future.delayed(const Duration(milliseconds: 450));
+    setState(() => _endCountdown = 1);
+    await Future.delayed(const Duration(milliseconds: 700));
     if (!mounted) return;
+    setState(() => _endCountdown = 0);
 
     if (_canContinue) {
       await _showContinueDialog();
       return;
     }
-
-    _startEndCountdown();
+    await _finalizeGameOver();
   }
 
   void _startEndCountdown() {
