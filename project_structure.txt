@@ -21,9 +21,11 @@
        star.svg
     lottie
         achievement.json
+        ai_bot.json
         clock.json
         free_play.json
         mission.json
+        puzzle.json
         star.json
         trending.json
  lib
@@ -49,6 +51,7 @@
     screens
        game
           game_board_view.dart
+          game_bot_logic.dart
           game_effects_logic.dart
           game_end_logic.dart
           game_hud.dart

@@ -179,7 +179,11 @@ class _HomeTabState extends State<HomeTab> with TickerProviderStateMixin {
     final diff = Difficulty.values[d.clamp(0, Difficulty.values.length - 1)];
     final b = await StorageService.getBestScore(diff);
     final bb = await StorageService.getBestScore(diff, bot: true);
-    final bt = await StorageService.getTimeAttackBest(bot: true);
+    final tb = await StorageService.getTimeAttackBest(difficulty: diff);
+    final bt = await StorageService.getTimeAttackBest(
+      bot: true,
+      difficulty: diff,
+    );
     final unlockedAch = await AchievementsService.unlockedCount();
     final claimableMissions = await MissionsService.claimableCount();
     final allMissions = await MissionsService.getAllProgress();
@@ -193,7 +197,7 @@ class _HomeTabState extends State<HomeTab> with TickerProviderStateMixin {
       _best = b;
       _botBest = bb;
       _botTimeAttackBest = bt;
-      _timeAttackBest = results[1] as int;
+      _timeAttackBest = tb;
       _completedIds = Set<int>.from(results[2] as Iterable);
       _completedLevels = _completedIds.length;
       _coins = results[3] as int;
@@ -218,10 +222,14 @@ class _HomeTabState extends State<HomeTab> with TickerProviderStateMixin {
     await StorageService.setDifficultyIndex(d.index);
     final b = await StorageService.getBestScore(d);
     final bb = await StorageService.getBestScore(d, bot: true);
+    final tb = await StorageService.getTimeAttackBest(difficulty: d);
+    final bt = await StorageService.getTimeAttackBest(bot: true, difficulty: d);
     if (mounted) {
       setState(() {
         _best = b;
         _botBest = bb;
+        _timeAttackBest = tb;
+        _botTimeAttackBest = bt;
       });
     }
   }

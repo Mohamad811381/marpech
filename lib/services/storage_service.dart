@@ -75,14 +75,28 @@ class StorageService {
     return getBestScore(Difficulty.values[index]);
   }
 
-  static Future<int> getTimeAttackBest({bool bot = false}) async {
-    final p = await SharedPreferences.getInstance();
-    return p.getInt(bot ? 'bot_$_timeAttackBestKey' : _timeAttackBestKey) ?? 0;
+  static String _timeBestKeyFor(Difficulty? d, bool bot) {
+    final base = (d == null || d == Difficulty.normal)
+        ? _timeAttackBestKey
+        : '${_timeAttackBestKey}_${d.name}';
+    return bot ? 'bot_$base' : base;
   }
 
-  static Future<void> setTimeAttackBest(int v, {bool bot = false}) async {
+  static Future<int> getTimeAttackBest({
+    bool bot = false,
+    Difficulty? difficulty,
+  }) async {
     final p = await SharedPreferences.getInstance();
-    await p.setInt(bot ? 'bot_$_timeAttackBestKey' : _timeAttackBestKey, v);
+    return p.getInt(_timeBestKeyFor(difficulty, bot)) ?? 0;
+  }
+
+  static Future<void> setTimeAttackBest(
+    int v, {
+    bool bot = false,
+    Difficulty? difficulty,
+  }) async {
+    final p = await SharedPreferences.getInstance();
+    await p.setInt(_timeBestKeyFor(difficulty, bot), v);
   }
 
   // ---------- آمار ----------

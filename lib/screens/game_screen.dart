@@ -402,8 +402,10 @@ class _GameScreenState extends State<GameScreen>
 
   Future<void> _initGame() async {
     if (_isTimeAttack) {
-      _best = await StorageService.getTimeAttackBest(bot: _hasBot);
-    } else if (!_isLevelMode) {
+      _best = await StorageService.getTimeAttackBest(
+        bot: _hasBot,
+        difficulty: d,
+      );    } else if (!_isLevelMode) {
       _best = await StorageService.getBestScore(d, bot: _hasBot);
     }
     if (_isLevelMode) {
@@ -812,8 +814,7 @@ class _GameScreenState extends State<GameScreen>
         _best = _score;
         _newRecord = true;
         if (_isTimeAttack) {
-          StorageService.setTimeAttackBest(_best, bot: _hasBot);
-        } else {
+          StorageService.setTimeAttackBest(_best, bot: _hasBot, difficulty: d);        } else {
           StorageService.setBestScore(d, _best, bot: _hasBot);
         }
       }
