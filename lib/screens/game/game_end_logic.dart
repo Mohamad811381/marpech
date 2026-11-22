@@ -3,7 +3,6 @@
 part of '../game_screen.dart';
 
 extension _GameEndLogic on _GameScreenState {
-
   Future<void> _winLevel() async {
     if (_winInProgress || _won) return;
     _winInProgress = true;
@@ -66,7 +65,9 @@ extension _GameEndLogic on _GameScreenState {
     if (!mounted) return;
     setState(() => _won = true);
   }
+
   Future<void> _recordHistory({required bool won}) async {
+    if (_hasBot) return;
     try {
       final mode = _isLevelMode
           ? GameMode.level
@@ -124,6 +125,7 @@ extension _GameEndLogic on _GameScreenState {
 
     _startEndCountdown();
   }
+
   void _startEndCountdown() {
     _endCountdownTimer?.cancel();
     setState(() => _endCountdown = 3);
@@ -163,7 +165,7 @@ extension _GameEndLogic on _GameScreenState {
       _pityCount = await StorageService.incrementPity(widget.level!.id);
     }
 
-    if (!_isLevelMode) {
+    if (!_isLevelMode && !_hasBot) {
       if (_newRecord) {
         await GhostService.save(
           difficulty: d,
@@ -229,7 +231,4 @@ extension _GameEndLogic on _GameScreenState {
       });
     }
   }
-
-
-
 }

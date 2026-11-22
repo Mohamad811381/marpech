@@ -54,6 +54,21 @@ extension _GameBoardView on _GameScreenState {
             ),
           ],
         ),
+        if (_hasBot) ...[
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: StatCard(
+                  label: L10n.t('game_bot_score'),
+                  value: '$_botScore',
+                  color: const Color(0xFFFF6B35),
+                  palette: p,
+                ),
+              ),
+            ],
+          ),
+        ],
         if (_isTimedLevel) ...[
           const SizedBox(height: 8),
           FoodProgressBar(
@@ -131,6 +146,9 @@ extension _GameBoardView on _GameScreenState {
                           walls: _walls,
                           ghost: settings.showGhost ? _ghostBody() : null,
                           portals: _portals,
+                          botSnake: _botSnake,
+                          prevBotSnake: _prevBotSnake,
+                          botDir: _botDir,
                         ),
                         child: const SizedBox.expand(),
                       ),
@@ -310,6 +328,7 @@ extension _GameBoardView on _GameScreenState {
                     newRecord: _newRecord,
                     newAchievements: _newAchievements,
                     hasNextLevel: hasNextLevel,
+                    botScore: _hasBot ? _botScore : null,
                     onBack: () => Navigator.of(context).pop(),
                     onReset: _reset,
                     onTogglePause: _togglePause,

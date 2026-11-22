@@ -3,11 +3,15 @@
 part of '../game_screen.dart';
 
 extension _GameRespawnLogic on _GameScreenState {
-  List<math.Point<int>>? _tryRespawnSnake(int length) {
+  List<math.Point<int>>? _tryRespawnSnake(
+    int length, {
+    math.Point<int>? preferred,
+    Set<math.Point<int>> avoid = const {},
+  }) {
     final useWrap = _isLevelMode ? (widget.level?.wrapEnabled ?? true) : d.wrap;
 
-    final preferredStart = widget.level?.snakeStart ?? const math.Point(9, 10);
-
+    final preferredStart =
+        preferred ?? widget.level?.snakeStart ?? const math.Point(9, 10);
     // همه‌ی cellها، مرتب‌شده بر اساس فاصله از preferredStart
     final allCells = <math.Point<int>>[];
     for (var y = 0; y < rows; y++) {
@@ -23,9 +27,9 @@ extension _GameRespawnLogic on _GameScreenState {
       return da.compareTo(db);
     });
 
-    for (final center in allCells) {
+     for (final center in allCells) {
       final snake = _tryCoilPlacementAt(center, length, useWrap);
-      if (snake != null) return snake;
+      if (snake != null && !snake.any(avoid.contains)) return snake;
     }
 
     return null;

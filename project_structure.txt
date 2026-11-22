@@ -117,6 +117,7 @@
        web_reload_web.dart
        web_reload.dart
     widgets
+       app_bottom_nav.dart
        app_drawer.dart
        board_painter.dart
        daily_reward_dialog.dart

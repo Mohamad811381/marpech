@@ -15,13 +15,13 @@ class StorageService {
   static const _noShieldGamesKey = 'stats_no_shield_games';
   static const _comboActivationsKey = 'stats_combo_activations';
   static const _playerXpTotalKey = 'player_xp_total';
-static const _xpBySourceKey = 'xp_by_source';
-static const _levelRewardsGrantedKey = 'level_rewards_granted';
-static const _xpProcessedEventsKey = 'xp_processed_events';
-static const _pendingXpTransactionKey = 'pending_xp_transaction';
-static const _xpSchemaVersionKey = 'xp_schema_version';
+  static const _xpBySourceKey = 'xp_by_source';
+  static const _levelRewardsGrantedKey = 'level_rewards_granted';
+  static const _xpProcessedEventsKey = 'xp_processed_events';
+  static const _pendingXpTransactionKey = 'pending_xp_transaction';
+  static const _xpSchemaVersionKey = 'xp_schema_version';
 // static const _xpSchemaVersionKey = 'xp_schema_version';
-static const _levelOwnedCosmeticsKey = 'level_owned_cosmetics';
+  static const _levelOwnedCosmeticsKey = 'level_owned_cosmetics';
 
   static String _bestKey(Difficulty d) => 'best_${d.name}';
 
@@ -59,14 +59,15 @@ static const _levelOwnedCosmeticsKey = 'level_owned_cosmetics';
   }
 
   // ---------- رکورد ----------
-  static Future<int> getBestScore(Difficulty d) async {
+  static Future<int> getBestScore(Difficulty d, {bool bot = false}) async {
     final p = await SharedPreferences.getInstance();
-    return p.getInt(_bestKey(d)) ?? 0;
+    return p.getInt(bot ? 'bot_${_bestKey(d)}' : _bestKey(d)) ?? 0;
   }
 
-  static Future<void> setBestScore(Difficulty d, int v) async {
+  static Future<void> setBestScore(Difficulty d, int v,
+      {bool bot = false}) async {
     final p = await SharedPreferences.getInstance();
-    await p.setInt(_bestKey(d), v);
+    await p.setInt(bot ? 'bot_${_bestKey(d)}' : _bestKey(d), v);
   }
 
   static Future<int> getBestScoreByIndex(int index) async {
@@ -74,14 +75,14 @@ static const _levelOwnedCosmeticsKey = 'level_owned_cosmetics';
     return getBestScore(Difficulty.values[index]);
   }
 
-  static Future<int> getTimeAttackBest() async {
+  static Future<int> getTimeAttackBest({bool bot = false}) async {
     final p = await SharedPreferences.getInstance();
-    return p.getInt(_timeAttackBestKey) ?? 0;
+    return p.getInt(bot ? 'bot_$_timeAttackBestKey' : _timeAttackBestKey) ?? 0;
   }
 
-  static Future<void> setTimeAttackBest(int v) async {
+  static Future<void> setTimeAttackBest(int v, {bool bot = false}) async {
     final p = await SharedPreferences.getInstance();
-    await p.setInt(_timeAttackBestKey, v);
+    await p.setInt(bot ? 'bot_$_timeAttackBestKey' : _timeAttackBestKey, v);
   }
 
   // ---------- آمار ----------
@@ -157,58 +158,57 @@ static const _levelOwnedCosmeticsKey = 'level_owned_cosmetics';
     await p.setStringList(_unlockedKey, ids.toList());
   }
 
-
-
   static Future<int> getPlayerXpTotal() async {
-  final p = await SharedPreferences.getInstance();
-  return p.getInt(_playerXpTotalKey) ?? 0;
-}
-
-static Future<void> setPlayerXpTotal(int v) async {
-  final p = await SharedPreferences.getInstance();
-  await p.setInt(_playerXpTotalKey, v);
-}
-
-static Future<String> getXpBySourceRaw() async {
-  final p = await SharedPreferences.getInstance();
-  return p.getString(_xpBySourceKey) ?? '';
-}
-
-static Future<void> setXpBySourceRaw(String v) async {
-  final p = await SharedPreferences.getInstance();
-  await p.setString(_xpBySourceKey, v);
-}
-
-static Future<Set<int>> getLevelRewardsGranted() async {
-  final p = await SharedPreferences.getInstance();
-  return (p.getStringList(_levelRewardsGrantedKey) ?? [])
-      .map(int.tryParse).whereType<int>().toSet();
-}
-
-static Future<Set<String>> getXpProcessedEvents() async {
-  final p = await SharedPreferences.getInstance();
-  return (p.getStringList(_xpProcessedEventsKey) ?? []).toSet();
-}
-
-static Future<String?> getPendingXpTransaction() async {
-  final p = await SharedPreferences.getInstance();
-  return p.getString(_pendingXpTransactionKey);
-}
-
-static Future<void> setPendingXpTransaction(String? v) async {
-  final p = await SharedPreferences.getInstance();
-  if (v == null) {
-    await p.remove(_pendingXpTransactionKey);
-  } else {
-    await p.setString(_pendingXpTransactionKey, v);
+    final p = await SharedPreferences.getInstance();
+    return p.getInt(_playerXpTotalKey) ?? 0;
   }
-}
 
-static Future<int> getXpSchemaVersion() async {
-  final p = await SharedPreferences.getInstance();
-  return p.getInt(_xpSchemaVersionKey) ?? 0;
-}
+  static Future<void> setPlayerXpTotal(int v) async {
+    final p = await SharedPreferences.getInstance();
+    await p.setInt(_playerXpTotalKey, v);
+  }
 
+  static Future<String> getXpBySourceRaw() async {
+    final p = await SharedPreferences.getInstance();
+    return p.getString(_xpBySourceKey) ?? '';
+  }
+
+  static Future<void> setXpBySourceRaw(String v) async {
+    final p = await SharedPreferences.getInstance();
+    await p.setString(_xpBySourceKey, v);
+  }
+
+  static Future<Set<int>> getLevelRewardsGranted() async {
+    final p = await SharedPreferences.getInstance();
+    return (p.getStringList(_levelRewardsGrantedKey) ?? [])
+        .map(int.tryParse)
+        .whereType<int>()
+        .toSet();
+  }
+
+  static Future<Set<String>> getXpProcessedEvents() async {
+    final p = await SharedPreferences.getInstance();
+    return (p.getStringList(_xpProcessedEventsKey) ?? []).toSet();
+  }
+
+  static Future<String?> getPendingXpTransaction() async {
+    final p = await SharedPreferences.getInstance();
+    return p.getString(_pendingXpTransactionKey);
+  }
+
+  static Future<void> setPendingXpTransaction(String? v) async {
+    final p = await SharedPreferences.getInstance();
+    if (v == null) {
+      await p.remove(_pendingXpTransactionKey);
+    } else {
+      await p.setString(_pendingXpTransactionKey, v);
+    }
+  }
+
+  static Future<int> getXpSchemaVersion() async {
+    final p = await SharedPreferences.getInstance();
+    return p.getInt(_xpSchemaVersionKey) ?? 0;
+  }
 
   // ---------- Level-Owned Cosmetics (Stage 3) ----------
 
@@ -234,6 +234,7 @@ static Future<int> getXpSchemaVersion() async {
     await setLevelOwnedCosmetics(current);
     return true;
   }
+
   // ---------- ریست ----------
   static Future<void> resetAllStats() async {
     final p = await SharedPreferences.getInstance();

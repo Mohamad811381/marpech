@@ -52,6 +52,8 @@ class _HomeTabState extends State<HomeTab> with TickerProviderStateMixin {
   Difficulty _difficulty = Difficulty.normal;
   int _best = 0;
   int _timeAttackBest = 0;
+  int _botBest = 0;
+  int _botTimeAttackBest = 0;
   bool _loaded = false;
   int _completedLevels = 0;
   Set<int> _completedIds = {};
@@ -176,6 +178,8 @@ class _HomeTabState extends State<HomeTab> with TickerProviderStateMixin {
     final d = results[0] as int;
     final diff = Difficulty.values[d.clamp(0, Difficulty.values.length - 1)];
     final b = await StorageService.getBestScore(diff);
+    final bb = await StorageService.getBestScore(diff, bot: true);
+    final bt = await StorageService.getTimeAttackBest(bot: true);
     final unlockedAch = await AchievementsService.unlockedCount();
     final claimableMissions = await MissionsService.claimableCount();
     final allMissions = await MissionsService.getAllProgress();
@@ -187,6 +191,8 @@ class _HomeTabState extends State<HomeTab> with TickerProviderStateMixin {
     setState(() {
       _difficulty = diff;
       _best = b;
+      _botBest = bb;
+      _botTimeAttackBest = bt;
       _timeAttackBest = results[1] as int;
       _completedIds = Set<int>.from(results[2] as Iterable);
       _completedLevels = _completedIds.length;
@@ -211,7 +217,13 @@ class _HomeTabState extends State<HomeTab> with TickerProviderStateMixin {
     setState(() => _difficulty = d);
     await StorageService.setDifficultyIndex(d.index);
     final b = await StorageService.getBestScore(d);
-    if (mounted) setState(() => _best = b);
+    final bb = await StorageService.getBestScore(d, bot: true);
+    if (mounted) {
+      setState(() {
+        _best = b;
+        _botBest = bb;
+      });
+    }
   }
 
   Future<void> _cyclePalette() async {
@@ -242,20 +254,7 @@ class _HomeTabState extends State<HomeTab> with TickerProviderStateMixin {
     if (mounted) setState(() {});
   }
 
-  Future<void> _startFree() async {
-    await _audio.playSfx(Sfx.button);
-    if (!mounted) return;
-    _snapshotBeforeGame();
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => GameScreen(difficulty: _difficulty, palette: p),
-      ),
-    );
-    if (!mounted) return;
-    await _load();
-  }
-
-  Future<void> _startTimeAttack() async {
+  Future<void> _openGame({Duration? timeLimit, bool vsBot = false}) async {
     await _audio.playSfx(Sfx.button);
     if (!mounted) return;
     _snapshotBeforeGame();
@@ -264,7 +263,8 @@ class _HomeTabState extends State<HomeTab> with TickerProviderStateMixin {
         builder: (_) => GameScreen(
           difficulty: _difficulty,
           palette: p,
-          timeLimit: const Duration(seconds: 60),
+          timeLimit: timeLimit,
+          vsBot: vsBot,
         ),
       ),
     );
@@ -518,36 +518,74 @@ class _HomeTabState extends State<HomeTab> with TickerProviderStateMixin {
   // ─────────────────────────────────────────
   // MODE CARDS
   // ─────────────────────────────────────────
-
   Widget _modeCards() {
-    return Row(
+    return Column(
       children: [
-        Expanded(
-          child: ModeCard(
-            palette: p,
-            lottieAsset: 'assets/lottie/free_play.json',
-            title: homeUpper(L10n.t('menu_free_play')),
-            tag: homeUpper(L10n.t('home_mode_endless')),
-            record: _best,
-            recordLabel: homeUpper(L10n.t('menu_record')),
-            letterSpacing: homeLs(1),
-            animationsEnabled: _animationsEnabled,
-            onTap: _startFree,
-          ),
+        Row(
+          children: [
+            Expanded(
+              child: ModeCard(
+                palette: p,
+                lottieAsset: 'assets/lottie/free_play.json',
+                title: homeUpper(L10n.t('menu_free_play')),
+                tag: homeUpper(L10n.t('home_mode_endless')),
+                record: _best,
+                recordLabel: homeUpper(L10n.t('menu_record')),
+                letterSpacing: homeLs(1),
+                animationsEnabled: _animationsEnabled,
+                onTap: () => _openGame(),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: ModeCard(
+                palette: p,
+                lottieAsset: 'assets/lottie/clock.json',
+                title: homeUpper(L10n.t('menu_timed_btn')),
+                tag: homeUpper(L10n.t('home_mode_60s')),
+                record: _timeAttackBest,
+                recordLabel: homeUpper(L10n.t('menu_record')),
+                letterSpacing: homeLs(1),
+                animationsEnabled: _animationsEnabled,
+                onTap: () => _openGame(timeLimit: const Duration(seconds: 60)),
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: ModeCard(
-            palette: p,
-            lottieAsset: 'assets/lottie/clock.json',
-            title: homeUpper(L10n.t('menu_timed_btn')),
-            tag: homeUpper(L10n.t('home_mode_60s')),
-            record: _timeAttackBest,
-            recordLabel: homeUpper(L10n.t('menu_record')),
-            letterSpacing: homeLs(1),
-            animationsEnabled: _animationsEnabled,
-            onTap: _startTimeAttack,
-          ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: ModeCard(
+                palette: p,
+                lottieAsset: 'assets/lottie/ai_bot.json',
+                title: homeUpper(L10n.t('menu_vs_bot')),
+                tag: homeUpper(L10n.t('home_mode_endless')),
+                record: _botBest,
+                recordLabel: homeUpper(L10n.t('menu_record')),
+                letterSpacing: homeLs(1),
+                animationsEnabled: _animationsEnabled,
+                onTap: () => _openGame(vsBot: true),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: ModeCard(
+                palette: p,
+                lottieAsset: 'assets/lottie/puzzle.json',
+                title: homeUpper(L10n.t('menu_vs_bot')),
+                tag: homeUpper(L10n.t('home_mode_60s')),
+                record: _botTimeAttackBest,
+                recordLabel: homeUpper(L10n.t('menu_record')),
+                letterSpacing: homeLs(1),
+                animationsEnabled: _animationsEnabled,
+                onTap: () => _openGame(
+                  vsBot: true,
+                  timeLimit: const Duration(seconds: 60),
+                ),
+              ),
+            ),
+          ],
         ),
       ],
     );

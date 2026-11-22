@@ -47,6 +47,7 @@ part 'game/game_board_view.dart';
 part 'game/game_end_logic.dart';
 part 'game/game_input_logic.dart';
 part 'game/game_effects_logic.dart';
+part 'game/game_bot_logic.dart';
 
 /// 🐢 ضریب سرعت مخصوص مراحل — 1.0 = عادی، 2.0 = دو برابر کندتر
 const double kLevelSpeedMultiplier = 1;
@@ -76,6 +77,7 @@ class GameScreen extends StatefulWidget {
   final GamePalette palette;
   final Level? level;
   final Duration? timeLimit;
+  final bool vsBot;
 
   const GameScreen({
     super.key,
@@ -83,6 +85,7 @@ class GameScreen extends StatefulWidget {
     required this.palette,
     this.level,
     this.timeLimit,
+    this.vsBot = false,
   });
 
   @override
@@ -120,6 +123,14 @@ class _GameScreenState extends State<GameScreen>
   late List<math.Point<int>> _snake;
   List<math.Point<int>> _prevSnake = [];
   late math.Point<int> _food;
+
+  // 🤖 مار ربات
+  List<math.Point<int>> _botSnake = [];
+  List<math.Point<int>> _prevBotSnake = [];
+  math.Point<int> _botDir = const math.Point(0, -1);
+  int _botScore = 0;
+  Timer? _botRespawnTimer;
+
   math.Point<int> _dir = const math.Point(0, -1);
   math.Point<int> _queued = const math.Point(0, -1);
   Timer? _timer;
@@ -201,6 +212,7 @@ class _GameScreenState extends State<GameScreen>
   GamePalette get p => widget.palette;
   Difficulty get d => widget.difficulty;
   bool get _isLevelMode => widget.level != null;
+  bool get _hasBot => widget.vsBot && !_isLevelMode;
   bool get _isTimeAttack => widget.timeLimit != null;
 
   // ⏱️ فصل ۴ — مرحله‌ی زمان‌دار
@@ -340,6 +352,7 @@ class _GameScreenState extends State<GameScreen>
     _shieldRecoveryTimer?.cancel();
     _ghostTimer?.cancel();
     _recoverySlowTimer?.cancel();
+    _botRespawnTimer?.cancel();
     _pulse.dispose();
     _introAnim.dispose();
     _particles.dispose();
@@ -389,9 +402,9 @@ class _GameScreenState extends State<GameScreen>
 
   Future<void> _initGame() async {
     if (_isTimeAttack) {
-      _best = await StorageService.getTimeAttackBest();
+      _best = await StorageService.getTimeAttackBest(bot: _hasBot);
     } else if (!_isLevelMode) {
-      _best = await StorageService.getBestScore(d);
+      _best = await StorageService.getBestScore(d, bot: _hasBot);
     }
     if (_isLevelMode) {
       _pityCount = await StorageService.getPityCount(widget.level!.id);
@@ -431,7 +444,7 @@ class _GameScreenState extends State<GameScreen>
   }
 
   Future<void> _loadGhost() async {
-    if (_isLevelMode || !SettingsService.current.showGhost) {
+    if (_isLevelMode || _hasBot || !SettingsService.current.showGhost) {
       _ghostRecording = null;
       return;
     }
@@ -510,6 +523,7 @@ class _GameScreenState extends State<GameScreen>
     _playerStateIndex = 0;
     _recordCurrentState();
 
+    _resetBot();
     _spawnFood();
     _focus.requestFocus();
     _audio.startMusic();
@@ -618,7 +632,7 @@ class _GameScreenState extends State<GameScreen>
   }
 
   void _spawnFood() {
-    final occupied = _snake.toSet();
+    final occupied = {..._snake, ..._botSnake};
     final walls = _walls;
     final portalCells = <math.Point<int>>{};
     for (final p in _portals) {
@@ -709,7 +723,7 @@ class _GameScreenState extends State<GameScreen>
     final ate = next == _food;
     final body = ate ? _snake : _snake.sublist(0, _snake.length - 1);
 
-    if (body.contains(next)) {
+    if (body.contains(next) || _botSnake.contains(next)) {
       _handleCollision(head);
       return;
     }
@@ -748,6 +762,7 @@ class _GameScreenState extends State<GameScreen>
 
     _playerStateIndex++;
     _recordCurrentState();
+    _botStep();
 
     if (SettingsService.current.smoothMovement) {
       _moveAnim.forward(from: 0);
@@ -797,9 +812,9 @@ class _GameScreenState extends State<GameScreen>
         _best = _score;
         _newRecord = true;
         if (_isTimeAttack) {
-          StorageService.setTimeAttackBest(_best);
+          StorageService.setTimeAttackBest(_best, bot: _hasBot);
         } else {
-          StorageService.setBestScore(d, _best);
+          StorageService.setBestScore(d, _best, bot: _hasBot);
         }
       }
     }

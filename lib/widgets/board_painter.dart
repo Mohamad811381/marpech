@@ -43,6 +43,11 @@ class BoardPainter extends CustomPainter {
 
   /// 👻 بدن شبح، از سر به دم
   final List<({int x, int y})>? ghost;
+  
+  /// 🤖 مار ربات
+  final List<Point<int>> botSnake;
+  final List<Point<int>>? prevBotSnake;
+  final Point<int> botDir;
 
   BoardPainter({
     this.portals = const [], // ← جدید
@@ -71,6 +76,9 @@ class BoardPainter extends CustomPainter {
     this.patternIntensity = PatternIntensity.subtle,
     this.ghostSkin = GhostSkin.basic,
     this.timePhase = 0,
+    this.botSnake = const [],
+    this.prevBotSnake,
+    this.botDir = const Point(0, -1),
   });
   Color get _foodColor {
     switch (powerUpType) {
@@ -242,11 +250,14 @@ class BoardPainter extends CustomPainter {
     }
   }
 
-  Offset _interpCenter(int index) {
-    final to = snake[index];
-    final from = (prevSnake != null && index < prevSnake!.length)
-        ? prevSnake![index]
-        : to;
+  Offset _interpCenterOf(
+    List<Point<int>> body,
+    List<Point<int>>? prevBody,
+    int index,
+  ) {
+    final to = body[index];
+    final from =
+        (prevBody != null && index < prevBody.length) ? prevBody[index] : to;
 
     final dx = (to.x - from.x).abs();
     final dy = (to.y - from.y).abs();
@@ -260,43 +271,31 @@ class BoardPainter extends CustomPainter {
     return Offset(ix + 0.5, iy + 0.5);
   }
 
-  @override
-  void paint(Canvas canvas, Size size) {
-    final cell = size.width / cols;
-    final q = PerformanceService.effective;
+  Offset _interpCenter(int index) => _interpCenterOf(snake, prevSnake, index);
+
+  /// کشیدن یک مار (بازیکن یا ربات)
+  void _paintSnake(
+    Canvas canvas,
+    double cell,
+    List<Point<int>> body,
+    List<Point<int>>? prevBody,
+    Point<int> headDir, {
+    SnakeSkin? skin,
+    Color? tint,
+  }) {
+    if (body.isEmpty) return;
     final blur = PerformanceService.blurMultiplier;
     final glow = PerformanceService.glowEnabled;
+    final useSkin = skin ?? snakeSkin;
 
-    if (showGrid) {
-      final gridPaint = Paint()
-        ..color = palette.grid
-        ..strokeWidth = 1;
-      for (var i = 1; i < cols; i++) {
-        final x = i * cell;
-        canvas.drawLine(Offset(x, 0), Offset(x, size.height), gridPaint);
-      }
-      for (var j = 1; j < rows; j++) {
-        final y = j * cell;
-        canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
-      }
-    }
-
-    if (pattern != BoardPattern.none) {
-      _paintPattern(canvas, size, cell);
-    }
-
-    _paintWalls(canvas, cell);
-    if (trail != TrailEffect.none) _paintTrail(canvas, cell);
-    _paintPortals(canvas, cell);
-    _paintGhost(canvas, cell);
-    _paintFood(canvas, cell);
-
-    // بدن مار بازیکن
-    for (var i = snake.length - 1; i >= 0; i--) {
-      final c = _interpCenter(i);
+    for (var i = body.length - 1; i >= 0; i--) {
+      final c = _interpCenterOf(body, prevBody, i);
       final cx = c.dx * cell;
       final cy = c.dy * cell;
-      final color = _segmentColor(i, snake.length);
+      final tailT = body.length <= 1 ? 0.0 : i / (body.length - 1);
+      final color = tint != null
+          ? Color.lerp(tint, Colors.black, tailT * 0.45)!
+          : _segmentColor(i, body.length);
 
       final rect = Rect.fromLTWH(
         cx - cell / 2,
@@ -319,7 +318,7 @@ class BoardPainter extends CustomPainter {
       }
 
       // 🎨 رندر مخصوص اسکین
-      switch (snakeSkin) {
+      switch (useSkin) {
         case SnakeSkin.pixel:
           final pixelRect = Rect.fromLTWH(
             cx - cell / 2 + 1,
@@ -463,13 +462,61 @@ class BoardPainter extends CustomPainter {
     }
 
     // چشم‌ها
-    final headCenter = _interpCenter(0);
+    final headCenter = _interpCenterOf(body, prevBody, 0);
     final center = Offset(headCenter.dx * cell, headCenter.dy * cell);
-    final f = Offset(dir.x.toDouble(), dir.y.toDouble()) * (cell * 0.16);
-    final s = Offset(-dir.y.toDouble(), dir.x.toDouble()) * (cell * 0.17);
+    final f =
+        Offset(headDir.x.toDouble(), headDir.y.toDouble()) * (cell * 0.16);
+    final s =
+        Offset(-headDir.y.toDouble(), headDir.x.toDouble()) * (cell * 0.17);
     final eyePaint = Paint()..color = palette.bg;
     canvas.drawCircle(center + f + s, cell * 0.085, eyePaint);
     canvas.drawCircle(center + f - s, cell * 0.085, eyePaint);
+  }
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final cell = size.width / cols;
+    final q = PerformanceService.effective;
+    final blur = PerformanceService.blurMultiplier;
+    final glow = PerformanceService.glowEnabled;
+
+    if (showGrid) {
+      final gridPaint = Paint()
+        ..color = palette.grid
+        ..strokeWidth = 1;
+      for (var i = 1; i < cols; i++) {
+        final x = i * cell;
+        canvas.drawLine(Offset(x, 0), Offset(x, size.height), gridPaint);
+      }
+      for (var j = 1; j < rows; j++) {
+        final y = j * cell;
+        canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
+      }
+    }
+
+    if (pattern != BoardPattern.none) {
+      _paintPattern(canvas, size, cell);
+    }
+
+    _paintWalls(canvas, cell);
+    if (trail != TrailEffect.none) _paintTrail(canvas, cell);
+    _paintPortals(canvas, cell);
+    _paintGhost(canvas, cell);
+    _paintFood(canvas, cell);
+
+    // 🤖 مار ربات (زیر مار بازیکن)
+    _paintSnake(
+      canvas,
+      cell,
+      botSnake,
+      prevBotSnake,
+      botDir,
+      skin: SnakeSkin.basic,
+      tint: const Color(0xFFFF6B35),
+    );
+
+    // بدن مار بازیکن
+    _paintSnake(canvas, cell, snake, prevSnake, dir);
 
     if (wrapEvent != null && wrapProgress < 1.0) {
       _paintWrapEffect(canvas, size, cell);

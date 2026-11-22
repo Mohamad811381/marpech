@@ -232,6 +232,7 @@ class GameOverlay extends StatelessWidget {
   final bool newRecord;
   final List<Achievement> newAchievements;
   final bool hasNextLevel;
+  final int? botScore;
 
   final VoidCallback onBack;
   final VoidCallback onReset;
@@ -255,6 +256,7 @@ class GameOverlay extends StatelessWidget {
     required this.newRecord,
     required this.newAchievements,
     required this.hasNextLevel,
+    this.botScore,
     required this.onBack,
     required this.onReset,
     required this.onTogglePause,
@@ -351,8 +353,17 @@ class GameOverlay extends StatelessWidget {
 
   List<Widget> _gameOverContent() {
     final p = palette;
-    final title = timedOut ? L10n.t('game_time_up') : L10n.t('game_over');
-    final emoji = timedOut ? '⏱️' : null;
+    final bot = botScore;
+    final title = bot != null
+        ? (score > bot
+            ? L10n.t('game_bot_win')
+            : score < bot
+                ? L10n.t('game_bot_lose')
+                : L10n.t('game_bot_draw'))
+        : (timedOut ? L10n.t('game_time_up') : L10n.t('game_over'));
+    final emoji = bot != null
+        ? (score > bot ? '🏆' : (score < bot ? '🤖' : '🤝'))
+        : (timedOut ? '⏱️' : null);
 
     return [
       if (emoji != null) ...[
@@ -430,7 +441,9 @@ class GameOverlay extends StatelessWidget {
           ),
         ),
       Text(
-        isLevelMode
+        bot != null
+            ? L10n.tf('game_bot_vs_score', {'n': score, 'm': bot})
+            : isLevelMode
             ? L10n.tf('game_progress_label', {
                 'n': foodsEaten,
                 'm': level?.targetFoods ?? 0,

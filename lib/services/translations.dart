@@ -776,6 +776,12 @@ const Map<String, Map<String, String>> translations = {
     'home_stat_ready': 'آماده!',
     'home_mode_endless': 'بی‌نهایت',
     'home_mode_60s': '۶۰ ثانیه',
+    'menu_vs_bot': 'بازی با ربات',
+    'game_bot_score': 'امتیاز ربات',
+    'game_bot_win': 'بردی!',
+    'game_bot_lose': 'ربات برد',
+    'game_bot_draw': 'مساوی شد',
+    'game_bot_vs_score': 'تو {n} - ربات {m}',
   },
   'en': {
     // ---------- Common ----------
@@ -1552,5 +1558,11 @@ const Map<String, Map<String, String>> translations = {
     'home_stat_ready': 'Ready!',
     'home_mode_endless': 'Endless',
     'home_mode_60s': '60 seconds',
+    'menu_vs_bot': 'VS Bot',
+    'game_bot_score': 'Bot score',
+    'game_bot_win': 'You win!',
+    'game_bot_lose': 'Bot wins',
+    'game_bot_draw': 'Draw',
+    'game_bot_vs_score': 'You {n} - Bot {m}',
   },
 };
