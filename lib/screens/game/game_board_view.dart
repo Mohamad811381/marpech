@@ -118,8 +118,14 @@ extension _GameBoardView on _GameScreenState {
                   child: AnimatedBuilder(
                     animation: Listenable.merge(animations),
                     builder: (context, _) => Opacity(
-                      opacity: _ghostActive ? 0.55 : 1.0,
-                      child: CustomPaint(
+                      opacity: _manualGhost
+                          ? ((_manualGhostLife <= 1 &&
+                                  (DateTime.now().millisecondsSinceEpoch ~/
+                                          150)
+                                      .isEven)
+                              ? 0.9
+                              : 0.55)
+                          : (_ghostActive ? 0.55 : 1.0),                      child: CustomPaint(
                         painter: BoardPainter(
                           snake: _snake,
                           prevSnake: _prevSnake,
@@ -145,8 +151,7 @@ extension _GameBoardView on _GameScreenState {
                           wrapProgress: _wrapAnim.value,
                           walls: _walls,
                           ghost: settings.showGhost ? _ghostBody() : null,
-                          portals: _portals,
-                          botSnake: _botSnake,
+                          portals: _visiblePortals,                          botSnake: _botSnake,
                           prevBotSnake: _prevBotSnake,
                           botDir: _botDir,
                         ),
@@ -240,7 +245,7 @@ extension _GameBoardView on _GameScreenState {
                     pityShields: _pityShields,
                   ),
                 // ═══════════ 👻 تغییر ۲: Ghost Border Overlay ═══════════
-                if (_ghostActive)
+                          if (_ghostActive || _manualGhost)
                   IgnorePointer(
                     child: Container(
                       decoration: BoxDecoration(

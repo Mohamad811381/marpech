@@ -216,9 +216,9 @@ class _GhostChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.10),
+             color: palette.textPrimary.withOpacity(0.08),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.35)),
+        border: Border.all(color: palette.border),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -228,8 +228,7 @@ class _GhostChip extends StatelessWidget {
           Text(
             L10n.t('game_ghost_chip'),
             style: TextStyle(
-              color: Colors.white.withOpacity(0.85),
-              fontSize: 11,
+              color: palette.textPrimary,              fontSize: 11,
               fontWeight: FontWeight.w700,
             ),
           ),

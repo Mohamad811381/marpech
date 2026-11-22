@@ -61,6 +61,7 @@ extension _GameBotLogic on _GameScreenState {
     if (_walls.contains(next)) return null;
     final dest = _getPortalDestination(next);
     if (dest != null) {
+      if (_dynamicPortals.isNotEmpty && !_botTakesPortal) return null;
       next = dest;
       if (_walls.contains(next)) return null;
     }
@@ -77,6 +78,7 @@ extension _GameBotLogic on _GameScreenState {
     }
     final next = _peekNext(_botSnake.first, dir)!;
     final ate = next == _food;
+    if (_botEnteredSuddenPortal(_botSnake.first, dir)) _closePortal();
 
     _prevBotSnake = List.from(_botSnake);
     _botDir = dir;
@@ -94,7 +96,7 @@ extension _GameBotLogic on _GameScreenState {
   math.Point<int>? _botPickDir() {
     final head = _botSnake.first;
     final blocked = <math.Point<int>>{
-      ..._snake,
+      if (!_manualGhost) ..._snake,
       ..._botSnake.take(_botSnake.length - 1), // دم ربات آزاد می‌شه
     };
 

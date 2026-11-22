@@ -48,6 +48,8 @@ part 'game/game_end_logic.dart';
 part 'game/game_input_logic.dart';
 part 'game/game_effects_logic.dart';
 part 'game/game_bot_logic.dart';
+part 'game/game_sudden_portal_logic.dart';
+part 'game/game_manual_ghost_logic.dart';
 
 /// 🐢 ضریب سرعت مخصوص مراحل — 1.0 = عادی، 2.0 = دو برابر کندتر
 const double kLevelSpeedMultiplier = 1;
@@ -208,7 +210,18 @@ class _GameScreenState extends State<GameScreen>
   int _continueCount = 0;
   int _currentCoins = 0;
   bool _isShowingContinueDialog = false;
+  // 🌀 Sudden Portal
+  List<PortalPair> _dynamicPortals = [];
+  PortalPair? _pendingPortal;
+  Timer? _portalTimer;
+  bool _botTakesPortal = false;
+  int _portalLife = 0;
 
+  // 👻 Manual Ghost
+  bool _manualGhost = false;
+  bool _manualGhostTimeUp = false;
+  int _manualGhostLife = 0;
+  Timer? _manualGhostTimer;
   GamePalette get p => widget.palette;
   Difficulty get d => widget.difficulty;
   bool get _isLevelMode => widget.level != null;
@@ -224,8 +237,7 @@ class _GameScreenState extends State<GameScreen>
 
   Set<math.Point<int>> get _walls =>
       widget.level?.walls ?? LevelsService.freePlayWalls(d);
-  List<PortalPair> get _portals => widget.level?.portals ?? const [];
-
+  List<PortalPair> get _portals => widget.level?.portals ?? _dynamicPortals;
   Point<int>? _getPortalDestination(math.Point<int> pos) {
     for (final pair in _portals) {
       final dest = pair.destination(pos);
@@ -353,6 +365,8 @@ class _GameScreenState extends State<GameScreen>
     _ghostTimer?.cancel();
     _recoverySlowTimer?.cancel();
     _botRespawnTimer?.cancel();
+    _manualGhostTimer?.cancel();
+    _portalTimer?.cancel();
     _pulse.dispose();
     _introAnim.dispose();
     _particles.dispose();
@@ -405,7 +419,8 @@ class _GameScreenState extends State<GameScreen>
       _best = await StorageService.getTimeAttackBest(
         bot: _hasBot,
         difficulty: d,
-      );    } else if (!_isLevelMode) {
+      );
+    } else if (!_isLevelMode) {
       _best = await StorageService.getBestScore(d, bot: _hasBot);
     }
     if (_isLevelMode) {
@@ -488,6 +503,13 @@ class _GameScreenState extends State<GameScreen>
     _foodsEaten = 0;
     _newAchievements = [];
     _endCountdown = 0;
+    _portalTimer?.cancel();
+    _dynamicPortals = [];
+    _pendingPortal = null;
+    _manualGhostTimer?.cancel();
+    _manualGhost = false;
+    _manualGhostTimeUp = false;
+    _manualGhostLife = 0;
     _continueCount = 0;
     _isShowingContinueDialog = false;
     _isShowingEmergencyDialog = false;
@@ -609,6 +631,7 @@ class _GameScreenState extends State<GameScreen>
   void _beginPlay() {
     if (_isAnyTimed) _startCountdown();
     _restartTimer();
+    _schedulePortalSpawn();
   }
 
   void _onTimeOut() {
@@ -687,21 +710,26 @@ class _GameScreenState extends State<GameScreen>
 
     final useWrap = _isLevelMode ? (widget.level?.wrapEnabled ?? true) : d.wrap;
 
+    var ghostWrapped = false;
     if (!useWrap &&
+        !_manualGhost &&
         (next.x < 0 || next.x >= cols || next.y < 0 || next.y >= rows)) {
       _handleCollision(head);
       return;
     }
 
-    if (useWrap) {
+    if (useWrap || _manualGhost) {
       final rawNext = next;
       next = math.Point(_wrap(rawNext.x, cols), _wrap(rawNext.y, rows));
-      if (rawNext != next && SettingsService.current.wrapEffect) {
-        _wrapEvent = WrapEvent(from: head, to: next, dir: _dir);
-        _wrapAnim.forward(from: 0);
+      if (rawNext != next) {
+        ghostWrapped = !useWrap;
+        if (SettingsService.current.wrapEffect) {
+          _wrapEvent = WrapEvent(from: head, to: next, dir: _dir);
+          _wrapAnim.forward(from: 0);
+        }
       }
     }
-    if (_walls.contains(next)) {
+    if (_walls.contains(next) && !_manualGhost) {
       _handleCollision(head);
       return;
     }
@@ -714,8 +742,9 @@ class _GameScreenState extends State<GameScreen>
       StorageService.incrementPortalsPassed();
       next = portalDest;
       portalTeleported = true;
+      _onSuddenPortalUsed();
       if (_walls.contains(next)) {
-        if (!_ghostActive) {
+        if (!_ghostActive && !_manualGhost) {
           _handleCollision(head);
           return;
         }
@@ -725,7 +754,7 @@ class _GameScreenState extends State<GameScreen>
     final ate = next == _food;
     final body = ate ? _snake : _snake.sublist(0, _snake.length - 1);
 
-    if (body.contains(next) || _botSnake.contains(next)) {
+    if (!_manualGhost && (body.contains(next) || _botSnake.contains(next))) {
       _handleCollision(head);
       return;
     }
@@ -749,7 +778,7 @@ class _GameScreenState extends State<GameScreen>
       }
     }
 
-    if (portalTeleported) {
+    if (portalTeleported || ghostWrapped) {
       final len = math.min(_prevSnake.length, _snake.length);
       for (var i = 0; i < len; i++) {
         final f = _prevSnake[i];
@@ -765,7 +794,7 @@ class _GameScreenState extends State<GameScreen>
     _playerStateIndex++;
     _recordCurrentState();
     _botStep();
-
+    _tryEndManualGhost();
     if (SettingsService.current.smoothMovement) {
       _moveAnim.forward(from: 0);
     } else {
@@ -814,7 +843,8 @@ class _GameScreenState extends State<GameScreen>
         _best = _score;
         _newRecord = true;
         if (_isTimeAttack) {
-          StorageService.setTimeAttackBest(_best, bot: _hasBot, difficulty: d);        } else {
+          StorageService.setTimeAttackBest(_best, bot: _hasBot, difficulty: d);
+        } else {
           StorageService.setBestScore(d, _best, bot: _hasBot);
         }
       }
@@ -866,7 +896,12 @@ class _GameScreenState extends State<GameScreen>
                     ),
                   ),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 6),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: _ghostButton(),
+                ),
+                const SizedBox(height: 6),
                 if (settings.controlType == ControlType.joystick)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 16),

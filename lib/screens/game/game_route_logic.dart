@@ -195,6 +195,7 @@ extension _GameRouteLogic on _GameScreenState {
 
     return steps;
   }
+  
 
   // ═══════════════════════════════════════════════════════════
   // 🛡️ Smart Shield Recovery
